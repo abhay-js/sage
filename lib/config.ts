@@ -1,0 +1,10 @@
+export const ANNUAL_PASS_PRICE_INR = 500;
+export const REFERRAL_CASH_REWARD_INR = 50;
+export const REFERRAL_POINTS = 100;
+export const REFERRAL_ACTIVATION_DAYS = 7;
+export const REFERRAL_VOID_DAYS = 30;
+export const SCORE_PER_SESSION = 10;
+export const SCORE_PER_HOUR = 15;
+export const STREAK_BONUS_7D = 50;
+export const STREAK_BONUS_30D = 200;
+export const UPI_ID = 'sageofrace@okicici';
