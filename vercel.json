@@ -1,11 +1,6 @@
 {
   "buildCommand": "npm run build:web",
-  "outputDirectory": "dist",
+  "outputDirectory": "public",
   "installCommand": "npm install --legacy-peer-deps",
-  "framework": null,
-  "build": {
-    "env": {
-      "NODE_VERSION": "20"
-    }
-  }
+  "framework": null
 }
