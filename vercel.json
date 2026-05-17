@@ -1,6 +1,6 @@
 {
-  "buildCommand": "",
+  "buildCommand": "echo 'using pre-built dist'",
   "outputDirectory": "dist",
-  "installCommand": "",
+  "installCommand": "echo 'no install needed'",
   "framework": null
 }
