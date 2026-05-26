@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, RefreshControl, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuth } from '../../context/AuthContext';
 import { useRaces } from '../../hooks/useRaces';
 import { useMyEntries } from '../../hooks/useEntries';
 import { RaceCard } from '../../components/RaceCard';
@@ -87,7 +87,7 @@ export default function HomeScreen() {
             <Text className="text-sage-text text-3xl font-black">{firstName}</Text>
           </View>
           <View className="flex-row items-center gap-3">
-              {topStreak > 0 && (
+            {topStreak > 0 && (
               <View className="bg-sage-surface rounded-2xl px-3 py-2 items-center">
                 <Text style={{ fontSize: 22 }}>🔥</Text>
                 <Text className="text-sage-text font-black text-sm leading-tight">{topStreak}</Text>

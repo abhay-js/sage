@@ -35,6 +35,13 @@ export default function AppLayout() {
         }}
       />
       <Tabs.Screen
+        name="challenges"
+        options={{
+          title: 'Challenges',
+          tabBarIcon: ({ focused }) => <Icon emoji="🎯" focused={focused} />,
+        }}
+      />
+      <Tabs.Screen
         name="ranks"
         options={{
           title: 'Ranks',
@@ -69,6 +76,7 @@ export default function AppLayout() {
           tabBarIcon: ({ focused }) => <Icon emoji="👤" focused={focused} />,
         }}
       />
+      <Tabs.Screen name="challenge-detail" options={{ href: null }} />
       <Tabs.Screen name="race-detail" options={{ href: null }} />
       <Tabs.Screen name="session-detail" options={{ href: null }} />
       <Tabs.Screen name="session-create" options={{ href: null }} />

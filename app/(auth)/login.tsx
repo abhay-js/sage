@@ -1,14 +1,10 @@
-import { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useState } from 'react';
+import { View, Text, TouchableOpacity, Alert, ActivityIndicator, Platform } from 'react-native';
 import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
 import { supabase } from '../../lib/supabase';
-import { exchangeStravaCode } from '../../lib/strava';
 
 WebBrowser.maybeCompleteAuthSession();
-
-const STRAVA_CLIENT_ID = process.env.EXPO_PUBLIC_STRAVA_CLIENT_ID!;
 
 function makeReferralCode(name: string): string {
   const prefix = name.trim().split(' ')[0].toUpperCase().slice(0, 4);
@@ -16,95 +12,60 @@ function makeReferralCode(name: string): string {
   return `${prefix}-${suffix}`;
 }
 
+async function ensureUserRow(userId: string, name: string, email: string | null) {
+  const { data: existing } = await supabase.from('users').select('id').eq('id', userId).single();
+  if (!existing) {
+    await supabase.from('users').insert({
+      id: userId,
+      name,
+      email,
+      status: 'pending',
+      role: 'athlete',
+      referral_code: makeReferralCode(name),
+      referred_by: null,
+    });
+  }
+}
+
 export default function LoginScreen() {
-  const router = useRouter();
   const [loading, setLoading] = useState(false);
 
-  const redirectUri = AuthSession.makeRedirectUri({
-    scheme: 'sage',
-    path: 'strava',
-  });
-
-  const [request, response, promptAsync] = AuthSession.useAuthRequest(
-    {
-      clientId: STRAVA_CLIENT_ID,
-      scopes: ['read', 'activity:read_all', 'profile:read_all'],
-      redirectUri,
-      responseType: AuthSession.ResponseType.Code,
-      extraParams: { approval_prompt: 'auto' },
-    },
-    { authorizationEndpoint: 'https://www.strava.com/oauth/authorize' }
-  );
-
-  useEffect(() => {
-    if (response?.type !== 'success') return;
-    handleCode(response.params.code);
-  }, [response]);
-
-  async function handleCode(code: string) {
+  async function handleGoogle() {
     setLoading(true);
     try {
-      const tokens = await exchangeStravaCode(code, redirectUri);
-      const athlete = tokens.athlete;
-
-      const email = `athlete.${athlete.id}@strava.app`;
-      const password = `strava_${athlete.id}_sage`;
-
-      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-
-      let userId: string;
-
-      if (signInError?.message.includes('Email not confirmed')) {
-        throw new Error('Disable email confirmations in Supabase Auth settings, then try again.');
-      } else if (signInError) {
-        const { data, error: signUpError } = await supabase.auth.signUp({ email, password });
-        if (signUpError || !data.user) throw signUpError ?? new Error('Signup failed');
-        if (!data.session) throw new Error('Enable email confirmations is still ON in Supabase — disable it, then try again.');
-        userId = data.user.id;
-        await supabase.from('users').insert({
-          id: userId,
-          name: `${athlete.firstname} ${athlete.lastname}`.trim(),
-          email: athlete.email ?? null,
-          status: 'pending',
-          role: 'athlete',
-          referral_code: makeReferralCode(athlete.firstname),
-          referred_by: null,
+      if (Platform.OS === 'web') {
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: { redirectTo: window.location.origin },
         });
-      } else {
-        const { data: { session } } = await supabase.auth.getSession();
-        userId = session!.user.id;
-        const { data: existing } = await supabase.from('users').select('id').eq('id', userId).single();
-        if (!existing) {
-          await supabase.from('users').insert({
-            id: userId,
-            name: `${athlete.firstname} ${athlete.lastname}`.trim(),
-            email: athlete.email ?? null,
-            status: 'pending',
-            role: 'athlete',
-            referral_code: makeReferralCode(athlete.firstname),
-            referred_by: null,
-          });
-        }
+        if (error) throw error;
+        return; // browser redirects to Google then back
       }
 
-      // Save / refresh Strava tokens
-      await supabase.from('users').update({
-        strava_athlete_id: String(athlete.id),
-        strava_access_token: tokens.access_token,
-        strava_refresh_token: tokens.refresh_token,
-        strava_token_expires_at: new Date(tokens.expires_at * 1000).toISOString(),
-      }).eq('id', userId);
+      // Native: open browser, intercept PKCE callback
+      const redirectUri = AuthSession.makeRedirectUri({ scheme: 'sage', path: 'auth-callback' });
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: redirectUri, skipBrowserRedirect: true },
+      });
+      if (error || !data.url) throw error ?? new Error('No OAuth URL');
 
-      // Trigger a fresh auth state so useAuth re-fetches the profile
-      await supabase.auth.refreshSession();
-      router.replace('/pending');
+      const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUri);
+      if (result.type !== 'success') { setLoading(false); return; }
+
+      const { data: session, error: sessionError } = await supabase.auth.exchangeCodeForSession(result.url);
+      if (sessionError) throw sessionError;
+
+      const googleUser = session.user!;
+      const displayName =
+        googleUser.user_metadata?.full_name ??
+        googleUser.user_metadata?.name ??
+        googleUser.email?.split('@')[0] ??
+        'Athlete';
+      await ensureUserRow(googleUser.id, displayName, googleUser.email ?? null);
+      // Navigation handled by _layout.tsx once useAuth picks up the user row
     } catch (e: any) {
-      const msg: string = e.message ?? '';
-      if (msg.includes('after') && msg.includes('second')) {
-        Alert.alert('Slow down', 'Please wait 48 seconds before trying again (Supabase rate limit).');
-      } else {
-        Alert.alert('Login failed', msg || 'Something went wrong. Try again.');
-      }
+      Alert.alert('Google sign-in failed', e.message ?? 'Something went wrong.');
     } finally {
       setLoading(false);
     }
@@ -112,7 +73,6 @@ export default function LoginScreen() {
 
   return (
     <View className="flex-1 bg-sage-bg items-center justify-center px-6">
-      {/* Brand */}
       <View className="items-center mb-14">
         <Text className="text-sage-green font-black text-6xl tracking-tight">SAGE</Text>
         <Text className="text-sage-muted text-base mt-2 text-center">
@@ -120,28 +80,22 @@ export default function LoginScreen() {
         </Text>
       </View>
 
-      {/* Strava CTA */}
       {loading ? (
         <View className="items-center gap-3">
           <ActivityIndicator color="#4ade80" size="large" />
-          <Text className="text-sage-muted text-sm">Connecting your account…</Text>
+          <Text className="text-sage-muted text-sm">Signing in…</Text>
         </View>
       ) : (
-        <>
-          <TouchableOpacity
-            onPress={() => promptAsync()}
-            disabled={!request}
-            activeOpacity={0.85}
-            className="bg-[#FC4C02] rounded-2xl py-4 w-full items-center mb-3"
-          >
-            <Text className="text-white font-black text-base tracking-widest">
-              LOGIN WITH STRAVA
-            </Text>
-          </TouchableOpacity>
-          <Text className="text-sage-muted text-xs text-center leading-5">
-            We only read your activities.{'\n'}We never post anything on your behalf.
+        <TouchableOpacity
+          onPress={handleGoogle}
+          activeOpacity={0.85}
+          className="bg-white rounded-2xl py-4 w-full items-center flex-row justify-center gap-3"
+        >
+          <Text style={{ fontSize: 18 }}>G</Text>
+          <Text style={{ color: '#111', fontWeight: '900', fontSize: 14, letterSpacing: 1 }}>
+            CONTINUE WITH GOOGLE
           </Text>
-        </>
+        </TouchableOpacity>
       )}
     </View>
   );

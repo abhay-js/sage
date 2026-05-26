@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { View, Text, ScrollView, FlatList, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuth } from '../../context/AuthContext';
 import { useMyEntries, useLeaderboard } from '../../hooks/useEntries';
 import { LeaderboardRow } from '../../components/LeaderboardRow';
 import { Entry } from '../../types';

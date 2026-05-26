@@ -1,108 +1,131 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, Alert } from 'react-native';
-import { useAuth } from '../hooks/useAuth';
+import { View, Text, TouchableOpacity, Alert, ScrollView } from 'react-native';
+import { useRouter } from 'expo-router';
+import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 
-const ROLES = [
-  { key: 'athlete', label: 'Athlete', icon: '🏃', desc: 'Train, compete, track progress' },
-  { key: 'influencer', label: 'Influencer', icon: '📣', desc: 'Promote races, earn commissions' },
+const SPORT_TYPES = [
+  { key: 'runner',     label: 'Runner',     icon: '🏃', desc: 'Road, trail, track' },
+  { key: 'cyclist',   label: 'Cyclist',    icon: '🚴', desc: 'Road, gravel, MTB' },
+  { key: 'swimmer',   label: 'Swimmer',    icon: '🏊', desc: 'Pool, open water' },
+  { key: 'triathlete', label: 'Triathlete', icon: '🏅', desc: 'Swim, bike, run' },
+  { key: 'hybrid',    label: 'Hybrid',     icon: '⚡', desc: 'Mix of disciplines' },
 ];
 
 export default function PendingScreen() {
   const { user, signOut, refreshProfile } = useAuth();
-  const [selectedRole, setSelectedRole] = useState(user?.role ?? 'athlete');
+  const router = useRouter();
+  const [selected, setSelected] = useState<string>(user?.sport_type ?? '');
   const [saving, setSaving] = useState(false);
 
-  async function saveRole() {
-    if (!user) return;
+  async function saveSportType() {
+    if (!user || !selected) return;
     setSaving(true);
-    await supabase.from('users').update({ role: selectedRole }).eq('id', user.id);
+    await supabase.from('users').update({ sport_type: selected }).eq('id', user.id);
     await refreshProfile();
     setSaving(false);
-    Alert.alert('Saved', 'Your role has been updated.');
   }
 
   async function handleSignOut() {
     Alert.alert('Sign out', 'Are you sure?', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Sign out', style: 'destructive', onPress: signOut },
+      { text: 'Sign out', style: 'destructive', onPress: async () => {
+        await signOut();
+        router.replace('/(auth)/login');
+      }},
     ]);
   }
 
   return (
-    <View className="flex-1 bg-sage-bg px-6">
-      {/* Sign out — top right */}
-      <View className="pt-14 pb-6 flex-row justify-end">
-        <TouchableOpacity
-          onPress={handleSignOut}
-          activeOpacity={0.7}
-          className="bg-red-500/10 border border-red-500/20 px-4 py-2 rounded-full"
-        >
-          <Text className="text-red-400 text-sm font-bold">Sign Out</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Status */}
-      <View className="items-center mb-8">
-        <View className="w-20 h-20 rounded-full bg-sage-green/10 items-center justify-center mb-4">
-          <Text style={{ fontSize: 36 }}>⏳</Text>
-        </View>
-        <Text className="text-sage-text font-black text-2xl mb-2 text-center">Almost there!</Text>
-        <Text className="text-sage-muted text-sm text-center leading-6">
-          Your payment is under review.{'\n'}We'll activate your account within 24 hours.
+    <ScrollView
+      className="flex-1 bg-sage-bg"
+      contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 64, paddingBottom: 48 }}
+      showsVerticalScrollIndicator={false}
+    >
+      {/* Header */}
+      <View className="items-center mb-10">
+        <Text className="text-sage-green font-black text-5xl tracking-tight mb-1">SAGE</Text>
+        <Text className="text-sage-text font-black text-2xl mt-3">
+          Hi, {user?.name?.split(' ')[0]}!
+        </Text>
+        <Text className="text-sage-muted text-sm mt-1 text-center">
+          Tell us how you train
         </Text>
       </View>
 
-      {/* Role selector */}
+      {/* Sport type selector */}
       <Text className="text-sage-muted text-[10px] font-bold tracking-widest uppercase mb-3">
-        I am a...
+        I primarily train as a...
       </Text>
-      {ROLES.map((r) => (
-        <TouchableOpacity
-          key={r.key}
-          onPress={() => setSelectedRole(r.key as any)}
-          activeOpacity={0.8}
-          className={`flex-row items-center p-4 rounded-2xl mb-3 border ${
-            selectedRole === r.key
-              ? 'bg-sage-green/10 border-sage-green'
-              : 'bg-sage-surface border-transparent'
-          }`}
-        >
-          <Text style={{ fontSize: 28 }} className="mr-3">{r.icon}</Text>
-          <View className="flex-1">
-            <Text className={`font-bold text-base ${selectedRole === r.key ? 'text-sage-green' : 'text-sage-text'}`}>
-              {r.label}
-            </Text>
-            <Text className="text-sage-muted text-xs mt-0.5">{r.desc}</Text>
-          </View>
-          {selectedRole === r.key && (
-            <View className="w-5 h-5 rounded-full bg-sage-green items-center justify-center">
-              <Text className="text-black text-xs font-black">✓</Text>
-            </View>
-          )}
-        </TouchableOpacity>
-      ))}
 
-      {selectedRole !== user?.role && (
+      {SPORT_TYPES.map((s) => {
+        const isSelected = selected === s.key;
+        return (
+          <TouchableOpacity
+            key={s.key}
+            onPress={() => setSelected(s.key)}
+            activeOpacity={0.8}
+            className={`flex-row items-center p-4 rounded-2xl mb-3 border ${
+              isSelected
+                ? 'bg-sage-green/10 border-sage-green'
+                : 'bg-sage-surface border-transparent'
+            }`}
+          >
+            <Text style={{ fontSize: 28, marginRight: 12 }}>{s.icon}</Text>
+            <View className="flex-1">
+              <Text className={`font-bold text-base ${isSelected ? 'text-sage-green' : 'text-sage-text'}`}>
+                {s.label}
+              </Text>
+              <Text className="text-sage-muted text-xs mt-0.5">{s.desc}</Text>
+            </View>
+            {isSelected && (
+              <View className="w-5 h-5 rounded-full bg-sage-green items-center justify-center">
+                <Text className="text-black text-xs font-black">✓</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        );
+      })}
+
+      {selected && selected !== user?.sport_type && (
         <TouchableOpacity
-          onPress={saveRole}
+          onPress={saveSportType}
           disabled={saving}
           activeOpacity={0.85}
-          className="bg-sage-green rounded-2xl py-3.5 items-center mt-1 mb-4"
+          className="bg-sage-green rounded-2xl py-3.5 items-center mt-1 mb-6"
         >
           <Text className="text-black font-black tracking-widest">
-            {saving ? 'SAVING…' : 'SAVE ROLE'}
+            {saving ? 'SAVING…' : 'SAVE'}
           </Text>
         </TouchableOpacity>
       )}
 
+      {/* Payment pending notice */}
+      <View className="bg-sage-surface rounded-2xl p-5 mt-2 mb-4">
+        <View className="flex-row items-center gap-3 mb-2">
+          <Text style={{ fontSize: 24 }}>⏳</Text>
+          <Text className="text-sage-text font-black text-base">Account pending</Text>
+        </View>
+        <Text className="text-sage-muted text-sm leading-5">
+          Your payment is under review. We'll activate your account within 24 hours.
+        </Text>
+        <TouchableOpacity
+          onPress={refreshProfile}
+          activeOpacity={0.7}
+          className="border border-sage-border rounded-xl py-2.5 items-center mt-4"
+        >
+          <Text className="text-sage-muted font-semibold text-sm">Check Status</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Sign out */}
       <TouchableOpacity
-        onPress={refreshProfile}
+        onPress={handleSignOut}
         activeOpacity={0.7}
-        className="border border-sage-border rounded-2xl py-3 items-center mt-2"
+        className="bg-red-500/10 border border-red-500/20 rounded-2xl py-3.5 items-center mt-2"
       >
-        <Text className="text-sage-muted font-semibold text-sm">Check Status</Text>
+        <Text className="text-red-400 font-bold text-sm tracking-wide">Sign Out</Text>
       </TouchableOpacity>
-    </View>
+    </ScrollView>
   );
 }

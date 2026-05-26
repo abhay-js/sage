@@ -3,7 +3,7 @@ import { View, Text, FlatList, TouchableOpacity, ScrollView, Alert } from 'react
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import * as Location from 'expo-location';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuth } from '../../context/AuthContext';
 import { useSessions, useMySessionEnrollments } from '../../hooks/useSessions';
 import { SessionCard } from '../../components/SessionCard';
 import { GroupSession } from '../../types';

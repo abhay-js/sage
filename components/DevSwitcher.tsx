@@ -3,6 +3,7 @@ import {
   View, Text, TouchableOpacity, Modal, ActivityIndicator, Alert,
 } from 'react-native';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../context/AuthContext';
 
 const TEST_ACCOUNTS = [
   {
@@ -36,9 +37,12 @@ const TEST_ACCOUNTS = [
 ];
 
 export function DevSwitcher() {
-  // Only renders in development builds — zero cost in production
   if (!__DEV__) return null;
+  return <DevSwitcherPanel />;
+}
 
+function DevSwitcherPanel() {
+  const { user } = useAuth();
   const [visible, setVisible] = useState(false);
   const [switching, setSwitching] = useState<string | null>(null);
 
@@ -122,21 +126,24 @@ export function DevSwitcher() {
 
               {TEST_ACCOUNTS.map((acc) => {
                 const isLoading = switching === acc.email;
+                const isCurrent = user?.email === acc.email;
                 return (
                   <TouchableOpacity
                     key={acc.email}
-                    onPress={() => switchTo(acc)}
-                    disabled={switching !== null}
-                    activeOpacity={0.8}
+                    onPress={() => !isCurrent && switchTo(acc)}
+                    disabled={switching !== null || isCurrent}
+                    activeOpacity={isCurrent ? 1 : 0.8}
                     style={{
-                      backgroundColor: '#1a1a1a',
+                      backgroundColor: isCurrent ? acc.color + '18' : '#1a1a1a',
                       borderRadius: 18,
                       padding: 16,
                       marginBottom: 10,
                       flexDirection: 'row',
                       alignItems: 'center',
                       justifyContent: 'space-between',
-                      opacity: switching !== null && !isLoading ? 0.4 : 1,
+                      borderWidth: isCurrent ? 1 : 0,
+                      borderColor: isCurrent ? acc.color + '55' : 'transparent',
+                      opacity: switching !== null && !isLoading && !isCurrent ? 0.4 : 1,
                     }}
                   >
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
@@ -163,6 +170,10 @@ export function DevSwitcher() {
 
                     {isLoading ? (
                       <ActivityIndicator size="small" color={acc.color} />
+                    ) : isCurrent ? (
+                      <Text style={{ color: acc.color, fontWeight: '900', fontSize: 11, letterSpacing: 1 }}>
+                        ACTIVE
+                      </Text>
                     ) : (
                       <Text style={{ color: acc.color, fontWeight: '800', fontSize: 12 }}>
                         LOGIN →

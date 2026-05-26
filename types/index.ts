@@ -11,6 +11,7 @@ export interface User {
   phone: string | null;
   status: UserStatus;
   role: UserRole;
+  sport_type: string | null;
   referral_code: string;
   referred_by: string | null;
   plan_expires_at: string | null;
@@ -123,4 +124,34 @@ export interface SessionEnrollment {
   user_id: string;
   status: 'pending' | 'enrolled' | 'attended' | 'no_show' | 'cancelled' | 'rejected';
   user?: User;
+}
+
+export interface Challenge {
+  id: string;
+  created_at: string;
+  title: string;
+  subtitle: string | null;
+  description: string | null;
+  challenge_type: 'distance' | 'time' | 'elevation' | 'streak' | 'speed';
+  sport_type: string;
+  target_value: number;
+  target_unit: string;
+  start_date: string;
+  end_date: string;
+  status: 'draft' | 'active' | 'completed' | 'archived';
+  difficulty: 'beginner' | 'intermediate' | 'elite';
+  category: 'featured' | 'trending' | 'brand' | 'beginner' | 'elite' | 'community';
+  cover_color: string;
+  banner_url: string | null;
+  participant_count: number;
+  is_brand_challenge: boolean;
+  brand_name: string | null;
+  brand_logo_url: string | null;
+  brand_instagram: string | null;
+  brand_website: string | null;
+  reward_title: string | null;
+  reward_description: string | null;
+  reward_image_url: string | null;
+  reward_type: string | null;
+  created_by: string | null;
 }

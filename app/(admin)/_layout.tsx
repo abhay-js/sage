@@ -1,13 +1,17 @@
-import { Tabs } from 'expo-router';
+import { Tabs, useRouter } from 'expo-router';
 import { Text, TouchableOpacity, Alert, Platform } from 'react-native';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuth } from '../../context/AuthContext';
 
 function SignOutButton() {
   const { signOut } = useAuth();
+  const router = useRouter();
   function confirm() {
     Alert.alert('Sign out', 'Are you sure?', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Sign out', style: 'destructive', onPress: signOut },
+      { text: 'Sign out', style: 'destructive', onPress: async () => {
+        await signOut();
+        router.replace('/(auth)/login');
+      }},
     ]);
   }
   return (

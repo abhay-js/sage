@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from 'expo-router';
 import Constants from 'expo-constants';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuth } from '../../context/AuthContext';
 import { useMyEntries } from '../../hooks/useEntries';
 import { StreakDots } from '../../components/StreakDots';
 import { supabase } from '../../lib/supabase';
@@ -140,7 +140,10 @@ export default function ProfileScreen() {
   async function handleSignOut() {
     Alert.alert('Sign out', 'Are you sure?', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Sign out', style: 'destructive', onPress: signOut },
+      { text: 'Sign out', style: 'destructive', onPress: async () => {
+        await signOut();
+        router.replace('/(auth)/login');
+      }},
     ]);
   }
 

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, FlatList } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuth } from '../../context/AuthContext';
 import { useMyEntries } from '../../hooks/useEntries';
 import { ActivityItem } from '../../components/ActivityItem';
 import { supabase } from '../../lib/supabase';

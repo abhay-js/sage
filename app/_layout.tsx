@@ -2,10 +2,11 @@ import '../global.css';
 import { useEffect } from 'react';
 import { Slot, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useAuth } from '../hooks/useAuth';
+import { View, Text } from 'react-native';
+import { AuthProvider, useAuth } from '../context/AuthContext';
 import { DevSwitcher } from '../components/DevSwitcher';
 
-export default function RootLayout() {
+function RootNavigator() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const segments = useSegments();
@@ -15,7 +16,6 @@ export default function RootLayout() {
 
     const inAuth = segments[0] === '(auth)';
     const inAdmin = segments[0] === '(admin)';
-    const inApp = segments[0] === '(app)';
     const inPending = segments[0] === 'pending';
 
     if (!user) {
@@ -25,9 +25,21 @@ export default function RootLayout() {
     } else if (user.status === 'pending') {
       if (!inPending) router.replace('/pending');
     } else if (user.status === 'active') {
-      if (inAuth || inPending) router.replace('/(app)');
+      if (inAuth || inPending || inAdmin) router.replace('/(app)');
     }
   }, [user, loading, segments]);
+
+  // Block all route rendering until auth is resolved — prevents admin/app flash on cold start
+  if (loading) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#0a0a0a', alignItems: 'center', justifyContent: 'center' }}>
+        <StatusBar style="light" />
+        <Text style={{ color: '#4ade80', fontWeight: '900', fontSize: 48, letterSpacing: -1 }}>
+          SAGE
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <>
@@ -35,5 +47,13 @@ export default function RootLayout() {
       <Slot />
       <DevSwitcher />
     </>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <AuthProvider>
+      <RootNavigator />
+    </AuthProvider>
   );
 }
