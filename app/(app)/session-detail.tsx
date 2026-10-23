@@ -57,6 +57,7 @@ export default function SessionDetailScreen() {
     );
   }
 
+  const sessionId = session.id;
   const isHost = session.host_id === user?.id;
   const myEnrollment: EnrollmentWithUser | undefined =
     [...accepted, ...pending, ...rejected].find((e) => e.user_id === user?.id);
@@ -82,13 +83,13 @@ export default function SessionDetailScreen() {
     if (!user) return;
     setBusy(true);
     const { error } = await supabase.from('session_enrollments').insert({
-      session_id: session.id, user_id: user.id, status: 'pending',
+      session_id: sessionId, user_id: user.id, status: 'pending',
     });
     if (error?.code === '23505') {
       await direct(
         () => supabase.from('session_enrollments')
           .update({ status: 'pending' })
-          .eq('session_id', session.id).eq('user_id', user.id),
+          .eq('session_id', sessionId).eq('user_id', user.id),
         'Request',
       );
     } else if (error) {
@@ -165,7 +166,7 @@ export default function SessionDetailScreen() {
         {
           text: 'Complete', onPress: async () => {
             setBusy(true);
-            await rpc('host_complete_session', { p_session_id: session.id }, 'Complete');
+            await rpc('host_complete_session', { p_session_id: sessionId }, 'Complete');
             await refetch();
             setBusy(false);
           },
@@ -176,7 +177,7 @@ export default function SessionDetailScreen() {
 
   async function archiveSession() {
     setBusy(true);
-    await direct(() => supabase.from('group_sessions').update({ status: 'archived' }).eq('id', session.id), 'Archive');
+    await direct(() => supabase.from('group_sessions').update({ status: 'archived' }).eq('id', sessionId), 'Archive');
     await refetch();
     setBusy(false);
   }
@@ -190,7 +191,7 @@ export default function SessionDetailScreen() {
         {
           text: 'Re-activate', onPress: async () => {
             setBusy(true);
-            await rpc('host_reactivate_session', { p_session_id: session.id }, 'Re-activate');
+            await rpc('host_reactivate_session', { p_session_id: sessionId }, 'Re-activate');
             await refetch();
             setBusy(false);
           },
@@ -204,7 +205,7 @@ export default function SessionDetailScreen() {
       { text: 'Keep it', style: 'cancel' },
       {
         text: 'Cancel session', style: 'destructive', onPress: async () => {
-          await direct(() => supabase.from('group_sessions').update({ status: 'cancelled' }).eq('id', session.id), 'Cancel');
+          await direct(() => supabase.from('group_sessions').update({ status: 'cancelled' }).eq('id', sessionId), 'Cancel');
           router.back();
         },
       },
@@ -223,7 +224,7 @@ export default function SessionDetailScreen() {
             </TouchableOpacity>
             {isHost && !isCancelled && (
               <TouchableOpacity
-                onPress={() => router.push({ pathname: '/(app)/session-edit', params: { id: session.id } })}
+                onPress={() => router.push({ pathname: '/(app)/session-edit', params: { id: sessionId } })}
                 activeOpacity={0.8}
                 className="bg-sage-surface px-4 py-1.5 rounded-full"
               >

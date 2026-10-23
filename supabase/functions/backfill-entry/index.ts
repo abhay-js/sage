@@ -1,8 +1,11 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { computeScore, refreshTokenIfNeeded, activityToLog } from '../_shared/scoring.ts';
+import { refreshTokenIfNeeded, activityToLog } from '../_shared/scoring.ts';
 
+const cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization,x-client-info,apikey,content-type'};
 serve(async (req) => {
+  if(req.method==='OPTIONS')return new Response('ok',{headers:cors});
+  if(req.method!=='POST')return json({error:'Method not allowed'},405);
   try {
     const { user_id, race_id } = await req.json();
     if (!user_id || !race_id) {
@@ -14,6 +17,14 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
+    const bearer=req.headers.get('Authorization')?.replace(/^Bearer /i,'');
+    if(!bearer)return json({error:'Authentication required'},401);
+    const {data:{user:caller},error:authError}=await supabase.auth.getUser(bearer);
+    if(authError||!caller)return json({error:'Invalid session'},401);
+    if(caller.id!==user_id){
+      const {data:identity}=await supabase.from('users').select('role').eq('id',caller.id).single();
+      if(identity?.role!=='admin')return json({error:'Forbidden'},403);
+    }
     // Load user + race in parallel
     const [{ data: user }, { data: race }] = await Promise.all([
       supabase.from('users')
@@ -73,20 +84,9 @@ serve(async (req) => {
         });
     }
 
-    // Score always computed from full DB (incremental fetch, full compute)
-    const { data: allLogs } = await supabase
-      .from('activity_logs').select('*').eq('user_id', user_id);
-
-    const { data: entry } = await supabase
-      .from('entries').select('bonus_points')
-      .eq('user_id', user_id).eq('race_id', race_id).single();
-
-    const scores = computeScore(allLogs ?? [], race, entry?.bonus_points ?? 0);
-
-    await supabase.from('entries').update(scores)
-      .eq('user_id', user_id).eq('race_id', race_id);
-
-    return json({ ok: true, fetched: activities.length, ...scores });
+    const {error:scoreError}=await supabase.rpc('sage_process_workouts',{p_user_id:user_id});
+    if(scoreError)throw scoreError;
+    return json({ok:true,fetched:activities.length});
   } catch (e: any) {
     return json({ error: e.message }, 500);
   }
@@ -95,6 +95,6 @@ serve(async (req) => {
 function json(body: object, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { 'Content-Type': 'application/json' },
+    headers: { ...cors, 'Content-Type': 'application/json' },
   });
 }

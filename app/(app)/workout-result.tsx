@@ -1,0 +1,7 @@
+import { Text,View } from 'react-native';
+import { useRouter } from 'expo-router';
+import { Page,Header,Button,Empty,Section,s } from '../../components/ui/SageUI';
+import { MetricGrid,form } from '../../components/ui/ProductUI';
+import { getWorkoutSyncResult } from '../../lib/workoutSync';
+import { sageColors as c } from '../../lib/theme';
+export default function WorkoutResult(){const result=getWorkoutSyncResult(),router=useRouter();return <Page><Header title="Workout sync complete" eyebrow="Every workout. Another step up."/>{result?<><Text style={[s.title,{color:c.orange}]}>{result.imported} new workouts</Text><Text style={form.note}>New imports await admin verification before earning challenge points.</Text>{result.challenges.map(ch=><View key={ch.id}><Section title={ch.name}/><MetricGrid items={[["Points gained",`+${ch.afterPoints-ch.beforePoints}`],['Previous rank',ch.beforeRank?`#${ch.beforeRank}`:'—'],['New rank',ch.afterRank?`#${ch.afterRank}`:'—'],['Athletes passed',ch.passed],['Next rival',ch.nextGap==null?'Summit':`${ch.nextGap} points away`]]}/><Button title="See your climb" onPress={()=>router.push({pathname:'/(app)/ranks',params:{raceId:ch.id,previousRank:ch.beforeRank??'',passed:ch.passed}})}/></View>)}<View style={{marginTop:22}}><Button title="View workouts & breakdowns" onPress={()=>router.replace('/(app)/log')}/></View></>:<Empty text="Sync your workouts to see your latest result."/>}</Page>;}

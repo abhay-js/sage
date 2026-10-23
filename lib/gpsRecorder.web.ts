@@ -1,0 +1,11 @@
+import {GpsRecording,RecordingSport} from './gpsRecording';
+const unsupported=async()=>{throw new Error('Open Sage on your iPhone or Android phone to record a GPS workout.');};
+export const loadRecording=async(userId:string):Promise<GpsRecording|null>=>null;
+export const reconcileRecordingOwner=async(userId?:string)=>{};
+export const subscribeRecording=(callback:()=>void)=>()=>{};
+export const startRecording=async(userId:string,sport:RecordingSport)=>unsupported();
+export const pauseRecording=async(userId:string)=>unsupported();
+export const resumeRecording=async(userId:string)=>unsupported();
+export const finishRecording=async(userId:string)=>unsupported();
+export const discardRecording=async(userId:string)=>{};
+export const recordingAppState=async(userId:string|undefined,state:string)=>{};

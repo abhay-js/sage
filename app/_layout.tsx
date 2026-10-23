@@ -1,18 +1,26 @@
 import '../global.css';
+import {reconcileRecordingOwner,recordingAppState} from '../lib/gpsRecorder';
 import { useEffect } from 'react';
-import { Slot, useRouter, useSegments } from 'expo-router';
+import { Slot, usePathname, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { View, Text } from 'react-native';
+import { AppState, Platform, View, Text } from 'react-native';
 import { AuthProvider, useAuth } from '../context/AuthContext';
-import { DevSwitcher } from '../components/DevSwitcher';
+// Test credentials and the account switcher must never be included in release builds.
+const DevSwitcher = __DEV__ ? require('../components/DevSwitcher').DevSwitcher : () => null;
+import { sageColors } from '../lib/theme';
 
 function RootNavigator() {
-  const { user, loading } = useAuth();
+  const { user, loading,recoveringPassword } = useAuth();
   const router = useRouter();
   const segments = useSegments();
+  const isLandingPage = usePathname() === '/';
+  const isPublicPage = segments[0] === 'privacy' || (Platform.OS === 'web' && isLandingPage);
 
   useEffect(() => {
+    if (isPublicPage && !(isLandingPage && recoveringPassword)) return;
     if (loading) return;
+    if(segments[0]==='(auth)'&&segments[1]==='auth-callback')return;
+    if(recoveringPassword){if(segments[1]!=='reset-password')router.replace('/(auth)/reset-password');return;}
 
     const inAuth = segments[0] === '(auth)';
     const inAdmin = segments[0] === '(admin)';
@@ -21,20 +29,24 @@ function RootNavigator() {
     if (!user) {
       if (!inAuth) router.replace('/(auth)/login');
     } else if (user.role === 'admin') {
-      if (!inAdmin) router.replace('/(admin)');
-    } else if (user.status === 'pending') {
-      if (!inPending) router.replace('/pending');
-    } else if (user.status === 'active') {
-      if (inAuth || inPending || inAdmin) router.replace('/(app)');
+      if (!inAdmin) router.replace('/(admin)/dashboard');
+    } else if (!user.onboarding_completed) {
+      if(segments[0]!=='onboarding')router.replace('/onboarding');
+    } else if (user.status === 'suspended') {
+      if(!inPending)router.replace('/pending');
+    } else {
+      if (inAuth || inPending || inAdmin || segments[0]==='onboarding' || isLandingPage) router.replace('/(app)/home');
     }
-  }, [user, loading, segments]);
+  }, [user, loading, segments,recoveringPassword,isPublicPage,isLandingPage]);
+
+  useEffect(()=>{if(loading)return;void reconcileRecordingOwner(user?.id).catch(()=>{});const subscription=AppState.addEventListener('change',state=>{void recordingAppState(user?.id,state).catch(()=>{});});return()=>subscription.remove();},[loading,user?.id]);
 
   // Block all route rendering until auth is resolved — prevents admin/app flash on cold start
-  if (loading) {
+  if (loading && !isPublicPage) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#0a0a0a', alignItems: 'center', justifyContent: 'center' }}>
-        <StatusBar style="light" />
-        <Text style={{ color: '#4ade80', fontWeight: '900', fontSize: 48, letterSpacing: -1 }}>
+      <View style={{ flex: 1, backgroundColor: sageColors.bg, alignItems: 'center', justifyContent: 'center' }}>
+        <StatusBar style="dark" />
+        <Text style={{ color: sageColors.green, fontWeight: '900', fontSize: 48, letterSpacing: -1 }}>
           SAGE
         </Text>
       </View>
@@ -43,7 +55,7 @@ function RootNavigator() {
 
   return (
     <>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
       <Slot />
       <DevSwitcher />
     </>

@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { subscribeHealthImport } from '../lib/healthSyncEvents';
+import { useCallback, useEffect, useState, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { Entry } from '../types';
 
@@ -6,17 +7,20 @@ export function useMyEntries(userId: string | undefined) {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [loading, setLoading] = useState(true);
 
-  async function fetchEntries() {
-    if (!userId) { setLoading(false); return; }
+  const owner=useRef(userId);owner.current=userId;
+  const fetchEntries=useCallback(async()=> {
+    if (!userId) { setEntries([]);setLoading(false); return; }
     const { data } = await supabase
       .from('entries')
       .select('*, race:races(*)')
       .eq('user_id', userId);
+    if(owner.current!==userId)return;
     setEntries(data ?? []);
     setLoading(false);
-  }
+  },[userId]);
 
-  useEffect(() => { fetchEntries(); }, [userId]);
+  useEffect(() => { setEntries([]);fetchEntries(); }, [fetchEntries]);
+  useEffect(()=>subscribeHealthImport(id=>{if(id===userId)void fetchEntries();}),[userId,fetchEntries]);
 
   return { entries, loading, refetch: fetchEntries };
 }

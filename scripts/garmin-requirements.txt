@@ -1,0 +1,2 @@
+# Reviewed repository snapshot used by the local experiment.
+garminconnect @ git+https://github.com/cyberjunky/python-garminconnect.git@218e72ca5459e014435fc2d94fd18bd601fa0c14

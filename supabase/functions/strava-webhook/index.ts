@@ -1,6 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { computeScore, refreshTokenIfNeeded, activityToLog } from '../_shared/scoring.ts';
+import { refreshTokenIfNeeded, activityToLog } from '../_shared/scoring.ts';
 
 serve(async (req) => {
   // Strava webhook verification handshake (GET)
@@ -54,17 +54,8 @@ serve(async (req) => {
     await supabase.from('activity_logs')
       .upsert(activityToLog(activity, user.id), { onConflict: 'strava_activity_id' });
 
-    // Recalculate scores for all of user's races
-    const [{ data: entries }, { data: allLogs }] = await Promise.all([
-      supabase.from('entries').select('race_id, bonus_points, race:races(*)').eq('user_id', user.id),
-      supabase.from('activity_logs').select('*').eq('user_id', user.id),
-    ]);
-
-    for (const entry of (entries ?? [])) {
-      const scores = computeScore(allLogs ?? [], entry.race as any, entry.bonus_points ?? 0);
-      await supabase.from('entries').update(scores)
-        .eq('user_id', user.id).eq('race_id', entry.race_id);
-    }
+    const {error:scoreError}=await supabase.rpc('sage_process_workouts',{p_user_id:user.id});
+    if(scoreError)throw scoreError;
 
     return new Response('OK');
   } catch (e: any) {

@@ -41,14 +41,7 @@ export default function StravaConnectScreen() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('Not authenticated');
 
-      const tokens = await exchangeStravaCode(code, redirectUri);
-
-      await supabase.from('users').update({
-        strava_athlete_id: String(tokens.athlete.id),
-        strava_access_token: tokens.access_token,
-        strava_refresh_token: tokens.refresh_token,
-        strava_token_expires_at: new Date(tokens.expires_at * 1000).toISOString(),
-      }).eq('id', session.user.id);
+      await exchangeStravaCode(code, redirectUri);
 
       router.back();
     } catch (e: any) {

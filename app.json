@@ -7,7 +7,7 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -15,11 +15,16 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.sage.app",
+      "bundleIdentifier": "com.abhayjain.sage.dev.f6afk24zxk",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Sage needs your location to show nearby training sessions.",
+        "NSLocationWhenInUseUsageDescription": "Sage uses your precise location to record workout routes and find nearby training sessions.",
         "NSHealthShareUsageDescription": "Sage reads your workouts to track training sessions and compute your score.",
-        "NSHealthUpdateUsageDescription": "Sage does not write to Apple Health."
+        "NSHealthUpdateUsageDescription": "Sage does not write to Apple Health.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Sage records your workout route while your screen is locked. Location tracking stops when you pause or finish.",
+        "NSLocationAlwaysUsageDescription": "Sage uses location during an active workout to keep recording while the screen is locked.",
+        "UIBackgroundModes": [
+          "location"
+        ]
       },
       "entitlements": {
         "com.apple.developer.healthkit": true,
@@ -32,14 +37,17 @@
         "backgroundColor": "#0a0a0a"
       },
       "package": "com.sage.app",
-      "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false,
       "permissions": [
         "android.permission.health.READ_EXERCISE",
         "android.permission.health.READ_DISTANCE",
         "android.permission.health.READ_HEART_RATE",
-        "android.permission.health.READ_CALORIES_BURNED",
-        "android.permission.health.READ_ELEVATION_GAINED"
+        "android.permission.health.READ_ELEVATION_GAINED",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_BACKGROUND_LOCATION",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_LOCATION",
+        "android.permission.health.READ_ACTIVE_CALORIES_BURNED"
       ]
     },
     "web": {
@@ -60,13 +68,28 @@
       "expo-router",
       "expo-secure-store",
       "expo-font",
-      "expo-web-browser",
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Sage needs your location to show nearby training sessions."
+          "locationWhenInUsePermission": "Sage uses your precise location to record workout routes and find nearby training sessions.",
+          "locationAlwaysAndWhenInUsePermission": "Sage records your workout route while your screen is locked. Location tracking stops when you pause or finish.",
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
         }
-      ]
+      ],
+      "react-native-health-connect",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 35,
+            "targetSdkVersion": 35,
+            "minSdkVersion": 26
+          }
+        }
+      ],
+      "./plugins/with-health-privacy.cjs"
     ],
     "experiments": {
       "typedRoutes": true

@@ -5,7 +5,7 @@ import {
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 
-const TEST_ACCOUNTS = [
+const TEST_ACCOUNTS = __DEV__ ? [
   {
     label: 'Athlete 1',
     sub: 'Active member · runner',
@@ -34,7 +34,7 @@ const TEST_ACCOUNTS = [
     password: 'devadminsage',
     color: '#f59e0b',
   },
-];
+] : [];
 
 export function DevSwitcher() {
   if (!__DEV__) return null;

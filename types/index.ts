@@ -4,6 +4,7 @@ export type RaceStatus = 'draft' | 'open' | 'closed';
 export type ReferralStatus = 'pending' | 'rewarded' | 'void';
 
 export interface User {
+  onboarding_completed?: boolean;
   id: string;
   created_at: string;
   name: string;
@@ -50,6 +51,8 @@ export interface Entry {
 }
 
 export interface ActivityLog {
+  review_status?: 'pending' | 'approved' | 'rejected';
+  review_reason?: string | null;
   id: string;
   created_at: string;
   user_id: string;
@@ -57,6 +60,7 @@ export interface ActivityLog {
   sport_type: string;
   activity_name: string;
   activity_date: string;
+  activity_started_at: string | null;
   moving_time_secs: number;
   elapsed_time_secs: number;
   distance_meters: number | null;

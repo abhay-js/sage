@@ -1,0 +1,35 @@
+import {useMemo,useState} from 'react';
+import {View,Text,TouchableOpacity,TextInput,Platform,Linking} from 'react-native';
+import {useRouter} from 'expo-router';
+import {Page,Header,Button,Empty,s} from '../../components/ui/SageUI';
+import {RecordingRouteMap} from '../../components/ui/RecordingRouteMap';
+import {MetricGrid} from '../../components/ui/ProductUI';
+import {sageColors as c} from '../../lib/theme';
+import {formatPace} from '../../lib/activityMetrics';
+import {recordingSummary,RecordingSport} from '../../lib/gpsRecording';
+import {useGpsRecorder} from '../../hooks/useGpsRecorder';
+function duration(seconds:number){return `${Math.floor(seconds/3600)?Math.floor(seconds/3600)+':':''}${String(Math.floor(seconds/60)%60).padStart(2,'0')}:${String(seconds%60).padStart(2,'0')}`;}
+export default function RecordActivity(){
+ const router=useRouter(),recorder=useGpsRecorder(),[sport,setSport]=useState<RecordingSport>('Run'),[note,setNote]=useState(''),[saved,setSaved]=useState(''),[confirmDiscard,setConfirmDiscard]=useState(false);
+ const record=recorder.record,measured=useMemo(()=>record?recordingSummary(record,Date.now()):null,[record]);
+ const summary=record&&measured?{...measured,activeSeconds:Math.floor(record.intervals.reduce((total,v)=>total+(v.end??recorder.now)-v.start,0)/1000),elapsedSeconds:Math.ceil(((record.finishedAt??recorder.now)-record.startedAt)/1000)}:null;
+ const mode=record?.sport??sport,recording=record?.status==='recording',finished=record?.status==='finished';
+ const last=record?.points[record.points.length-1],stale=recording&&(!last||recorder.now-last.timestamp>20000);
+ async function save(){const result=await recorder.save(note);if(result){setSaved(result.created?'Workout submitted for admin review.':`Workout already submitted · ${result.status}`);setNote('');}}
+ return <Page><Header title={finished?'Your recorded workout':'Record activity'} eyebrow="Your next workout" action={<TouchableOpacity onPress={()=>router.back()}><Text style={{color:c.orange,fontWeight:'800'}}>Back</Text></TouchableOpacity>}/>
+ {Platform.OS==='web'?<Empty text="Open Sage on your iPhone or Android phone to record a GPS workout."/>:<>
+ {!record&&<><View style={[s.card,{padding:20,marginBottom:18}]}><Text style={[s.title,{fontSize:24}]}>Ready to move?</Text><Text style={[s.muted,{marginTop:8}]}>Choose your sport, then start your outdoor workout. Your phone records the GPS route.</Text></View><Text style={s.muted}>Start recording outdoors. Sage automatically records your route, distance, active time and pace. Finish to send the workout for admin approval.</Text><View style={[s.row,{gap:12,marginVertical:20}]}>{(['Run','Walk','Ride'] as RecordingSport[]).map(v=><TouchableOpacity key={v} disabled={recorder.busy} onPress={()=>setSport(v)} style={{padding:15,borderRadius:14,backgroundColor:v===sport?c.green:c.surface}}><Text style={{color:v===sport?c.onAccent:c.text,fontWeight:'800'}}>{v}</Text></TouchableOpacity>)}</View><Text style={[s.muted,{marginBottom:18}]}>Allow precise location. Allow background location to keep recording with your screen locked. Tracking stops when you pause or finish.</Text><Button title={recorder.busy?'Starting GPS…':`Start ${sport.toLowerCase()}`} disabled={recorder.busy||recorder.loading} onPress={()=>{setSaved('');void recorder.start(sport);}}/></>}
+ {record&&summary&&<><View style={[s.between,{marginBottom:18}]}><Text style={s.section}>{mode} · {recording?'Recording':finished?'Finished':'Paused'}</Text><View style={{height:10,width:10,borderRadius:5,backgroundColor:recording?c.orange:c.green}}/></View>
+ <MetricGrid items={[["Distance",`${(summary.distanceMeters/1000).toFixed(2)} km`],["Active time",duration(summary.activeSeconds)],[mode==='Ride'?'Average speed':'Average pace',summary.distanceMeters>0?(mode==='Ride'?`${(summary.distanceMeters/Math.max(1,summary.activeSeconds)*3.6).toFixed(1)} km/h`:`${formatPace(summary.activeSeconds/60/(summary.distanceMeters/1000))} /km`):'—'],["Elapsed",duration(summary.elapsedSeconds)]]}/>
+ <RecordingRouteMap points={summary.locations} live={recording}/>
+ {recording&&<Text style={[s.muted,{marginBottom:14}]}>{stale?'GPS signal is weak or not ready. Missing movement will not be invented.':`GPS accuracy about ${Math.round(last!.accuracy)} m · ${record.background?'Screen-lock recording enabled':'Keep Sage open; background location was not allowed'}`}</Text>}
+ {!record.background&&!finished&&<Text style={{color:c.orange,marginBottom:14}}>This workout pauses when you leave Sage. Enable Always location access in Settings for recording with the screen locked.</Text>}
+ {record.gpsError&&<Text style={{color:c.orange,marginBottom:14}}>{record.gpsError}</Text>}
+ {!finished?<View style={{gap:12}}><Button title={recorder.busy?'Updating…':recording?'Pause':'Resume'} disabled={recorder.busy} onPress={()=>void(recording?recorder.pause():recorder.resume())}/><Button title="Finish workout" disabled={recorder.busy} onPress={()=>void recorder.finish()}/></View>:<><Text style={s.muted}>Recorded metrics are filled automatically. Heart rate requires a separate watch or sensor and is not measured by phone GPS.</Text><TextInput accessibilityLabel="Note for admin" placeholder="Note for admin (optional)" placeholderTextColor={c.muted} multiline maxLength={1000} value={note} onChangeText={setNote} style={[s.card,{padding:16,color:c.text,marginVertical:16}]}/><Button title={recorder.busy?'Submitting…':'Save & submit for review'} disabled={recorder.busy||summary.distanceMeters<10||summary.activeSeconds<10} onPress={()=>void save()}/>{(summary.distanceMeters<10||summary.activeSeconds<10)&&<Text style={[s.muted,{marginTop:12}]}>A workout needs at least 10 seconds and 10 metres of valid GPS movement to submit.</Text>}<Text style={[s.muted,{marginTop:12}]}>Saved locally until submitted. If you are offline, come back here later to retry.</Text></>}
+ <TouchableOpacity disabled={recorder.busy} onPress={()=>setConfirmDiscard(true)} style={{padding:18}}><Text style={{color:c.muted,textAlign:'center'}}>Discard workout</Text></TouchableOpacity>{confirmDiscard&&<View style={[s.card,{padding:18,gap:12}]}><Text style={s.section}>Discard this recorded workout?</Text><Text style={s.muted}>Its unsent route and metrics will be removed from this phone.</Text><Button title="Discard workout" disabled={recorder.busy} onPress={()=>{setConfirmDiscard(false);void recorder.discard();}}/><TouchableOpacity onPress={()=>setConfirmDiscard(false)}><Text style={{color:c.green,textAlign:'center'}}>Keep workout</Text></TouchableOpacity></View>}
+ </>}
+ {recorder.error&&<View style={{marginTop:16}}><Text accessibilityRole="alert" style={{color:c.orange}}>{recorder.error}</Text><TouchableOpacity onPress={()=>void Linking.openSettings()}><Text style={{color:c.green,marginTop:12}}>Open phone settings</Text></TouchableOpacity></View>}
+ {saved&&<View style={{marginTop:18,gap:12}}><Text accessibilityRole="alert" style={s.section}>{saved}</Text><Button title="View submissions" onPress={()=>router.push('/(app)/submit-activity')}/></View>}
+ </>}
+ </Page>;
+}

@@ -8,7 +8,7 @@
 
 A working web app (mobile-first) where:
 - A new user can sign up, connect Strava, and pay ₹500
-- Admin can verify payment and activate the user
+- Admin can verify payment and activate the userg
 - Active user can join a race and see their score on the leaderboard
 - Leaderboard scores are computed from real Strava activity data
 - Admin can add races and manage users

@@ -1,0 +1,11 @@
+garminconnect @ git+https://github.com/cyberjunky/python-garminconnect.git@218e72ca5459e014435fc2d94fd18bd601fa0c14
+cryptography==50.0.2
+curl_cffi==0.16.3
+requests==2.34.2
+ua-generator==2.1.6
+cffi==2.1.1
+certifi==2026.7.22
+charset-normalizer==3.5.2
+idna==3.20
+pycparser==3.11
+urllib3==2.8.0

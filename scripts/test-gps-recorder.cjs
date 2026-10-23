@@ -1,0 +1,19 @@
+const fs=require('node:fs'),assert=require('node:assert/strict'),vm=require('node:vm'),ts=require('typescript');
+const storage=new Map(),tasks=new Map();let clock=1800000000000,registered=false,background=true,stopped=0;
+class FakeDate extends Date{static now(){return clock;}}
+const FileSystem={documentDirectory:'file:///test/',getInfoAsync:async(path)=>({exists:storage.has(path)}),makeDirectoryAsync:async()=>{},readAsStringAsync:async(path)=>storage.get(path),writeAsStringAsync:async(path,value)=>{storage.set(path,value);},deleteAsync:async(path)=>{storage.delete(path);}};
+const Location={Accuracy:{BestForNavigation:6},ActivityType:{Fitness:3},hasStartedLocationUpdatesAsync:async()=>registered,stopLocationUpdatesAsync:async()=>{registered=false;stopped++;},hasServicesEnabledAsync:async()=>true,requestForegroundPermissionsAsync:async()=>({granted:true}),getBackgroundPermissionsAsync:async()=>({granted:background}),requestBackgroundPermissionsAsync:async()=>({granted:background}),startLocationUpdatesAsync:async()=>{registered=true;},watchPositionAsync:async()=>({remove:()=>{stopped++;}})};
+const TaskManager={isTaskDefined:name=>tasks.has(name),defineTask:(name,callback)=>tasks.set(name,callback),isAvailableAsync:async()=>true};
+function evaluate(path,requireFn){const box={exports:{},Date:FakeDate,Uint8Array,require:requireFn};vm.runInNewContext(ts.transpileModule(fs.readFileSync(path,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText,box);return box.exports;}
+const math=evaluate('lib/gpsRecording.ts',()=>{}),recorder=evaluate('lib/gpsRecorder.ts',name=>({'expo-file-system':FileSystem,'expo-location':Location,'expo-task-manager':TaskManager,'./gpsRecording':math}[name]));
+const user='22222222-2222-4222-8222-222222222222',other='33333333-3333-4333-8333-333333333333';
+(async()=>{await recorder.startRecording(user,'Run');assert(registered);let record=await recorder.loadRecording(user);assert.equal(record.status,'recording');
+const send=async(longitude)=>tasks.get(recorder.RECORDING_TASK)({data:{locations:[{coords:{latitude:0,longitude,accuracy:3,altitude:10},timestamp:clock}]}});
+await send(0);clock+=10000;await send(.0001);assert.equal((await recorder.loadRecording(user)).points.length,2);
+await recorder.pauseRecording(user);assert(!registered);clock+=10000;await send(.0002);assert.equal((await recorder.loadRecording(user)).points.length,2);
+await recorder.resumeRecording(user);assert(registered);clock+=10000;await send(.0002);
+await recorder.reconcileRecordingOwner(other);assert(!registered);record=await recorder.loadRecording(user);assert.equal(record.status,'paused');assert.equal(await recorder.loadRecording(other),null);
+await recorder.resumeRecording(user);clock+=10000;await send(.0003);await recorder.finishRecording(user);record=await recorder.loadRecording(user);assert.equal(record.status,'finished');assert(!registered);assert(storage.has('file:///test/sage-recordings/'+user+'.json'));
+await assert.rejects(recorder.startRecording(user,'Run'),/previous workout/);await recorder.discardRecording(user);assert.equal(await recorder.loadRecording(user),null);
+background=false;await recorder.startRecording(user,'Walk');clock+=10000;await recorder.recordingAppState(user,'background');assert.equal((await recorder.loadRecording(user)).status,'paused');assert(stopped>0);
+console.log('PASS: persisted drafts, background task samples, pause/resume/finish, no paused samples, account isolation, duplicate-start prevention, discard and foreground-only background pause.');})().catch(e=>{console.error(e);process.exitCode=1;});

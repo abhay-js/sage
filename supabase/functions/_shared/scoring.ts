@@ -1,3 +1,4 @@
+// Legacy display helper; persisted scores are calculated by sage_process_workouts.
 export const SCORE_PER_SESSION = 10;
 export const SCORE_PER_HOUR = 15;
 export const STREAK_BONUS_7D = 50;
@@ -13,7 +14,8 @@ export function computeScore(
 
   const qualifying = logs.filter((a) => {
     const t = new Date(a.activity_date).getTime();
-    return race.sport_types.includes(a.sport_type) && t >= start && t <= end;
+    const review = a.review_status ?? (Array.isArray(a.workout_reviews) ? a.workout_reviews[0]?.status : a.workout_reviews?.status);
+    return review === 'approved' && race.sport_types.includes(a.sport_type) && t >= start && t <= end;
   });
 
   const sessions = qualifying.length;
@@ -80,7 +82,7 @@ const SPORT_NORMALIZER: Record<string, string> = {
   'Walk': 'Walk', 'Hike': 'Hike',
   'WeightTraining': 'WeightTraining', 'Workout': 'Workout',
   'Yoga': 'Yoga', 'Rowing': 'Rowing', 'Kayaking': 'Kayaking',
-  'Soccer': 'Soccer', 'Tennis': 'Tennis', 'Crossfit': 'Crossfit',
+  'Soccer': 'Soccer', 'Tennis': 'Tennis', 'Crossfit': 'CrossFit', 'CrossFit':'CrossFit',
 };
 
 export function normalizeSportType(raw: string | undefined | null): string {
@@ -95,6 +97,9 @@ export function activityToLog(a: any, userId: string) {
     sport_type: normalizeSportType(a.sport_type ?? a.type),
     activity_name: a.name,
     activity_date: a.start_date,
+    activity_started_at: a.start_date,
+    indoor: a.trainer === true || a.sport_type === "VirtualRide" ? true : a.trainer === false ? false : null,
+    avg_power: a.average_watts ?? null,
     moving_time_secs: a.moving_time,
     elapsed_time_secs: a.elapsed_time,
     distance_meters: a.distance ?? null,

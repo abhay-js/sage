@@ -1,102 +1,90 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, Alert, ActivityIndicator, Platform } from 'react-native';
-import * as AuthSession from 'expo-auth-session';
-import * as WebBrowser from 'expo-web-browser';
+import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, ScrollView, Platform } from 'react-native';
 import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../hooks/useAuth';
+import { Link, useRouter } from 'expo-router';
+import { Brand } from '../../components/ui/SageUI';
 
-WebBrowser.maybeCompleteAuthSession();
-
-function makeReferralCode(name: string): string {
-  const prefix = name.trim().split(' ')[0].toUpperCase().slice(0, 4);
-  const suffix = Math.random().toString(36).substring(2, 6).toUpperCase();
-  return `${prefix}-${suffix}`;
-}
-
-async function ensureUserRow(userId: string, name: string, email: string | null) {
-  const { data: existing } = await supabase.from('users').select('id').eq('id', userId).single();
-  if (!existing) {
-    await supabase.from('users').insert({
-      id: userId,
-      name,
-      email,
-      status: 'pending',
-      role: 'athlete',
-      referral_code: makeReferralCode(name),
-      referred_by: null,
-    });
-  }
-}
-
-export default function LoginScreen() {
+export default function LoginScreen({ initialCreating = false }: { initialCreating?: boolean }) {
+  const { refreshProfile, error: profileError } = useAuth();
+  const [creating, setCreating] = useState(initialCreating);
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmation,setConfirmation]=useState('');
+  const router=useRouter();
   const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
 
-  async function handleGoogle() {
+  async function submit() {
+    if (loading) return;
+    setMessage('');
+    const address = email.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address)) {
+      setMessage('Enter a valid email address.');
+      return;
+    }
+    if (!password || (creating && password.length < 8)) {
+      setMessage(creating ? 'Use a password with at least 8 characters.' : 'Enter your password.');
+      return;
+    }
+    if (creating && !name.trim()) {
+      setMessage('Enter your name.');
+      return;
+    }
+    if(creating&&password!==confirmation){setMessage('Passwords do not match.');return;}
     setLoading(true);
     try {
-      if (Platform.OS === 'web') {
-        const { error } = await supabase.auth.signInWithOAuth({
-          provider: 'google',
-          options: { redirectTo: window.location.origin },
+      if (creating) {
+        const { data, error } = await supabase.auth.signUp({
+          email: address, password, options: { data: { full_name: name.trim() } },
         });
         if (error) throw error;
-        return; // browser redirects to Google then back
+        if (!data.session) {
+          setMessage('Check your email to confirm your account, then return here to sign in.');
+          setCreating(false);
+          setPassword('');
+          return;
+        }
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({ email: address, password });
+        if (error) throw error;
       }
-
-      // Native: open browser, intercept PKCE callback
-      const redirectUri = AuthSession.makeRedirectUri({ scheme: 'sage', path: 'auth-callback' });
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: { redirectTo: redirectUri, skipBrowserRedirect: true },
-      });
-      if (error || !data.url) throw error ?? new Error('No OAuth URL');
-
-      const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUri);
-      if (result.type !== 'success') { setLoading(false); return; }
-
-      const { data: session, error: sessionError } = await supabase.auth.exchangeCodeForSession(result.url);
-      if (sessionError) throw sessionError;
-
-      const googleUser = session.user!;
-      const displayName =
-        googleUser.user_metadata?.full_name ??
-        googleUser.user_metadata?.name ??
-        googleUser.email?.split('@')[0] ??
-        'Athlete';
-      await ensureUserRow(googleUser.id, displayName, googleUser.email ?? null);
-      // Navigation handled by _layout.tsx once useAuth picks up the user row
-    } catch (e: any) {
-      Alert.alert('Google sign-in failed', e.message ?? 'Something went wrong.');
+      await refreshProfile();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Unable to sign in. Please try again.');
     } finally {
       setLoading(false);
     }
   }
 
+  const fieldClass = 'bg-sage-surface border border-sage-border rounded-2xl px-4 py-4 text-sage-text mb-4';
   return (
-    <View className="flex-1 bg-sage-bg items-center justify-center px-6">
-      <View className="items-center mb-14">
-        <Text className="text-sage-green font-black text-6xl tracking-tight">SAGE</Text>
-        <Text className="text-sage-muted text-base mt-2 text-center">
-          Train with the village.{'\n'}Compete. Improve. Win.
-        </Text>
-      </View>
-
-      {loading ? (
-        <View className="items-center gap-3">
-          <ActivityIndicator color="#4ade80" size="large" />
-          <Text className="text-sage-muted text-sm">Signing in…</Text>
+    <KeyboardAvoidingView className="flex-1 bg-sage-bg" behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 24 }} keyboardShouldPersistTaps="handled">
+        <View className="w-full max-w-md self-center">
+          <View className="items-center mb-10"><Brand /><Text className="text-sage-muted text-base mt-4 text-center">Every workout. Another step up.</Text></View>
+          <Text className="text-sage-text text-2xl font-bold mb-6">{creating ? 'Join the village' : 'Welcome back'}</Text>
+          {creating && <>
+            <Text className="text-sage-muted mb-2">Name</Text>
+            <TextInput accessibilityLabel="Name" value={name} onChangeText={setName} editable={!loading} autoComplete="name" className={fieldClass} />
+          </>}
+          <Text className="text-sage-muted mb-2">Email</Text>
+          <TextInput accessibilityLabel="Email" value={email} onChangeText={setEmail} editable={!loading} keyboardType="email-address" autoCapitalize="none" autoCorrect={false} autoComplete="email" className={fieldClass} />
+          <Text className="text-sage-muted mb-2">Password</Text>
+          <TextInput accessibilityLabel="Password" value={password} onChangeText={setPassword} editable={!loading} secureTextEntry autoCapitalize="none" autoCorrect={false} autoComplete={creating ? 'new-password' : 'current-password'} returnKeyType="go" onSubmitEditing={submit} className={fieldClass} />
+          {creating&&<><Text className="text-sage-muted mb-2">Confirm Password</Text><TextInput accessibilityLabel="Confirm Password" value={confirmation} onChangeText={setConfirmation} secureTextEntry autoCapitalize="none" className={fieldClass}/></>}
+          {!creating&&<TouchableOpacity accessibilityRole="button" onPress={()=>router.push('/(auth)/forgot-password')} className="pb-4"><Text className="text-sage-orange">Forgot password?</Text></TouchableOpacity>}
+          {!!(message || profileError) && <Text accessibilityRole="alert" accessibilityLiveRegion="polite" className="text-sage-orange mb-4">{message || profileError}</Text>}
+          <TouchableOpacity accessibilityRole="button" disabled={loading} onPress={submit} activeOpacity={0.85} className="bg-sage-orange rounded-2xl py-4 items-center" style={{ opacity: loading ? 0.6 : 1 }}>
+            <Text className="text-sage-onAccent font-black text-base">{loading ? 'Please wait…' : creating ? 'CREATE ACCOUNT' : 'SIGN IN'}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity accessibilityRole="button" disabled={loading} onPress={() => { setCreating(!creating); setMessage(''); setPassword(''); }} className="py-5 items-center">
+            <Text className="text-sage-muted">{creating ? 'Already a member? Sign in' : 'New to Sage? Create an account'}</Text>
+          </TouchableOpacity>
+          <Link href="/privacy" className="text-sage-muted text-center underline py-3">Privacy policy</Link>
         </View>
-      ) : (
-        <TouchableOpacity
-          onPress={handleGoogle}
-          activeOpacity={0.85}
-          className="bg-white rounded-2xl py-4 w-full items-center flex-row justify-center gap-3"
-        >
-          <Text style={{ fontSize: 18 }}>G</Text>
-          <Text style={{ color: '#111', fontWeight: '900', fontSize: 14, letterSpacing: 1 }}>
-            CONTINUE WITH GOOGLE
-          </Text>
-        </TouchableOpacity>
-      )}
-    </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }

@@ -1,3 +1,4 @@
+import { resolveIdentities } from './resolveIdentities';
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { GroupSession, SessionEnrollment } from '../types';
@@ -29,7 +30,8 @@ export function useSessions(filters: SessionFilters = {}) {
 
     if (filters.sport) q = q.eq('sport_type', filters.sport);
     const { data } = await q;
-    setSessions(data ?? []);
+    const identities=await resolveIdentities((data??[]).map(s=>s.host_id));
+    setSessions((data??[]).map(s=>({...s,host:identities.get(s.host_id)??null})));
     setLoading(false);
   }, [filters.sport, filters.mine, filters.userId]);
 
@@ -55,8 +57,9 @@ export function useSession(sessionId: string | undefined) {
         .eq('session_id', sessionId)
         .in('status', ['pending', 'enrolled', 'attended', 'no_show', 'rejected']),
     ]);
-    setSession(s);
-    const all: EnrollmentWithUser[] = e ?? [];
+    const identities=await resolveIdentities([s?.host_id,...(e??[]).map(x=>x.user_id)].filter(Boolean));
+    setSession(s?{...s,host:identities.get(s.host_id)??null}:null);
+    const all: EnrollmentWithUser[] = (e??[]).map(x=>({...x,user:identities.get(x.user_id)??null}));
     setAccepted(all.filter((x) => ['enrolled', 'attended', 'no_show'].includes(x.status)));
     setPending(all.filter((x) => x.status === 'pending'));
     setRejected(all.filter((x) => x.status === 'rejected'));

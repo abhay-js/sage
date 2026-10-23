@@ -1,219 +1,34 @@
-import { useState, useEffect } from 'react';
-import { View, Text, ScrollView, FlatList, TouchableOpacity } from 'react-native';
+import { useEffect,useRef,useState } from 'react';
+import { View,Text,TouchableOpacity,FlatList,TextInput,Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useLocalSearchParams,useRouter } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
-import { useMyEntries, useLeaderboard } from '../../hooks/useEntries';
-import { LeaderboardRow } from '../../components/LeaderboardRow';
-import { Entry } from '../../types';
-
-type SortKey = 'sage_score' | 'sessions' | 'total_hours' | 'streak';
-
-const SORT_OPTIONS: { key: SortKey; label: string }[] = [
-  { key: 'sage_score', label: 'Score' },
-  { key: 'sessions', label: 'Sessions' },
-  { key: 'total_hours', label: 'Hours' },
-  { key: 'streak', label: 'Streak' },
-];
-
-type AnyEntry = Entry & { user: any };
-
-function PodiumBlock({
-  entry,
-  rank,
-}: {
-  entry?: AnyEntry;
-  rank: 1 | 2 | 3;
-}) {
-  const configs = {
-    1: { emoji: '🥇', textColor: '#facc15', bg: 'rgba(250,204,21,0.15)', barH: 64 },
-    2: { emoji: '🥈', textColor: '#d4d4d8', bg: 'rgba(212,212,216,0.12)', barH: 44 },
-    3: { emoji: '🥉', textColor: '#f59e0b', bg: 'rgba(245,158,11,0.12)', barH: 32 },
-  };
-  const cfg = configs[rank];
-
-  if (!entry) {
-    return (
-      <View className="flex-1 items-center justify-end">
-        <View style={{ height: cfg.barH, backgroundColor: '#1a1a1a', borderRadius: 8 }} className="w-full rounded-t-xl" />
-      </View>
-    );
-  }
-
-  const firstName = entry.user?.name?.split(' ')[0] ?? 'Athlete';
-  const initials = entry.user?.name
-    ?.split(' ')
-    .map((w: string) => w[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2) ?? '?';
-
-  return (
-    <View className="flex-1 items-center">
-      <Text className="text-xs font-bold text-sage-muted mb-1" numberOfLines={1}>
-        {firstName}
-      </Text>
-      <View
-        className="w-12 h-12 rounded-full items-center justify-center mb-1"
-        style={{ backgroundColor: cfg.bg }}
-      >
-        <Text className="text-sm font-black" style={{ color: cfg.textColor }}>
-          {initials}
-        </Text>
-      </View>
-      <Text style={{ fontSize: rank === 1 ? 22 : 18 }}>{cfg.emoji}</Text>
-      <View
-        className="w-full rounded-t-xl mt-2 items-center justify-center"
-        style={{ height: cfg.barH, backgroundColor: '#1a1a1a' }}
-      >
-        <Text className="text-xs font-black" style={{ color: cfg.textColor }}>
-          {entry.sage_score.toLocaleString()}
-        </Text>
-      </View>
-    </View>
-  );
-}
-
-export default function RanksScreen() {
-  const { user } = useAuth();
-  const { entries: myEntries } = useMyEntries(user?.id);
-  const [selectedRaceId, setSelectedRaceId] = useState<string | undefined>(undefined);
-  const [sortKey, setSortKey] = useState<SortKey>('sage_score');
-
-  // Set default race once entries load
-  useEffect(() => {
-    if (!selectedRaceId && myEntries.length > 0) {
-      setSelectedRaceId(myEntries[0].race_id);
-    }
-  }, [myEntries]);
-
-  const { entries, loading } = useLeaderboard(selectedRaceId);
-
-  const sorted = [...entries].sort((a, b) => (b[sortKey] as number) - (a[sortKey] as number));
-  const top3 = sorted.slice(0, 3) as AnyEntry[];
-  const myRank = sorted.findIndex((e) => e.user_id === user?.id) + 1;
-
-  return (
-    <SafeAreaView className="flex-1 bg-sage-bg">
-      {/* Header */}
-      <View className="px-5 pt-5 pb-3">
-        <Text className="text-sage-text text-3xl font-black mb-4">Leaderboard</Text>
-
-        {myEntries.length > 0 && (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ paddingRight: 20 }}
-            className="-mx-5 px-5 mb-3"
-          >
-            {myEntries.map((e) => (
-              <TouchableOpacity
-                key={e.race_id}
-                onPress={() => setSelectedRaceId(e.race_id)}
-                activeOpacity={0.7}
-                className={`mr-2 px-4 py-1.5 rounded-full ${
-                  selectedRaceId === e.race_id ? 'bg-sage-green' : 'bg-sage-surface'
-                }`}
-              >
-                <Text
-                  className={`text-sm font-bold ${
-                    selectedRaceId === e.race_id ? 'text-black' : 'text-sage-muted'
-                  }`}
-                >
-                  {(e.race as any)?.name ?? 'Race'}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        )}
-
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingRight: 20 }}
-          className="-mx-5 px-5"
-        >
-          {SORT_OPTIONS.map((opt) => (
-            <TouchableOpacity
-              key={opt.key}
-              onPress={() => setSortKey(opt.key)}
-              activeOpacity={0.7}
-              className={`mr-2 px-3 py-1 rounded-full border ${
-                sortKey === opt.key
-                  ? 'border-sage-green bg-sage-green/10'
-                  : 'border-transparent bg-transparent'
-              }`}
-            >
-              <Text
-                className={`text-xs font-bold ${
-                  sortKey === opt.key ? 'text-sage-green' : 'text-sage-muted'
-                }`}
-              >
-                {opt.label.toUpperCase()}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
-
-      {loading ? (
-        <Text className="text-sage-muted text-sm text-center py-8">Loading…</Text>
-      ) : myEntries.length === 0 ? (
-        <View className="flex-1 items-center justify-center">
-          <Text className="text-4xl mb-3">🏆</Text>
-          <Text className="text-sage-text font-bold text-base mb-1">No races yet</Text>
-          <Text className="text-sage-muted text-sm">Join a race to enter the leaderboard.</Text>
-        </View>
-      ) : (
-        <FlatList
-          data={sorted}
-          keyExtractor={(item) => item.id}
-          showsVerticalScrollIndicator={false}
-          ListHeaderComponent={
-            <>
-              {/* Your rank callout */}
-              {myRank > 0 && (
-                <View className="mx-5 mb-5 bg-sage-surface rounded-2xl px-4 py-3 flex-row justify-between items-center">
-                  <Text className="text-sage-muted text-xs font-bold tracking-widest uppercase">
-                    Your Rank
-                  </Text>
-                  <Text className="text-sage-green font-black text-2xl">#{myRank}</Text>
-                </View>
-              )}
-
-              {/* Podium */}
-              {top3.length > 0 && (
-                <View className="px-5 mb-2">
-                  <View className="flex-row items-end gap-2" style={{ height: 160 }}>
-                    <PodiumBlock entry={top3[1]} rank={2} />
-                    <PodiumBlock entry={top3[0]} rank={1} />
-                    <PodiumBlock entry={top3[2]} rank={3} />
-                  </View>
-                </View>
-              )}
-
-              {sorted.length > 0 && (
-                <Text className="text-sage-muted text-[10px] font-bold tracking-widest uppercase px-5 pt-4 pb-2">
-                  All Athletes
-                </Text>
-              )}
-            </>
-          }
-          renderItem={({ item, index }) => (
-            <LeaderboardRow
-              rank={index + 1}
-              user={item.user}
-              entry={item}
-              isMe={item.user_id === user?.id}
-            />
-          )}
-          ListEmptyComponent={
-            sorted.length === 0 ? (
-              <Text className="text-sage-muted text-sm text-center py-8">No athletes yet.</Text>
-            ) : null
-          }
-          ListFooterComponent={<View className="h-6" />}
-        />
-      )}
-    </SafeAreaView>
-  );
+import { useProductChallenges,useAroundMe,useBoardPage,useRpc } from '../../hooks/useProduct';
+import { BoardAthlete } from '../../types/product';
+import { Header,Avatar,Button,Empty,s } from '../../components/ui/SageUI';
+import { Skeleton,form } from '../../components/ui/ProductUI';
+import { ClimberMarker,Climber } from '../../components/ui/Climber';
+import { MountainArt } from '../../components/ui/MountainArt';
+import { sageColors as c } from '../../lib/theme';
+export default function MountainScreen(){
+ const params=useLocalSearchParams<{raceId?:string;view?:string;previousRank?:string;passed?:string}>(),router=useRouter(),{user}=useAuth(),{data:challenges}=useProductChallenges();
+ const [raceId,setRaceId]=useState<string>(),[view,setView]=useState<'mountain'|'list'>(params.view==='list'?'list':'mountain'),[page,setPage]=useState(0),[search,setSearch]=useState(''),[camera,setCamera]=useState<'me'|'summit'|'range'>('me'),[offset,setOffset]=useState(0);
+ useEffect(()=>{if(params.raceId)setRaceId(params.raceId);else if(!raceId)setRaceId(challenges?.find(c=>c.joined&&c.status==='open')?.id);},[params.raceId,challenges]);
+ const {data:around,loading,error,refresh}=useAroundMe(raceId),board=useBoardPage(raceId,page,search),window=useRpc<{athletes:BoardAthlete[];total:number}>('sage_leaderboard',{p_race_id:raceId,p_offset:offset,p_limit:7,p_search:''},!!raceId&&camera==='range');
+ const rows=camera==='summit'?around?.summit??[]:camera==='range'?window.data?.athletes??[]:[...(around?.above??[]),...(around?.current?[around.current]:[]),...(around?.below??[])];
+ const heights=rows.map((a,i)=>i===0?180:Math.max(150,Math.min(240,150+Math.log2(Math.max(1,rows[i-1].sage_score-a.sage_score)+1)*9)));
+ const positions=heights.map((_,i)=>heights.slice(0,i).reduce((n,h)=>n+h,0));
+ const list=useRef<FlatList>(null),climb=useRef(new Animated.Value(Number(params.passed)>0?120:0)).current;
+ useEffect(()=>{if(Number(params.passed)>0)Animated.timing(climb,{toValue:0,duration:1100,useNativeDriver:true}).start();},[params.passed]);
+ function center(){setCamera('me');const index=rows.findIndex(a=>a.user_id===user?.id);if(index>=0)list.current?.scrollToOffset({offset:Math.max(0,positions[index]-170),animated:true});}
+ useEffect(()=>{if(camera==='me'&&rows.length){const i=rows.findIndex(a=>a.user_id===user?.id);if(i>=0)setTimeout(()=>list.current?.scrollToOffset({offset:Math.max(0,positions[i]-170),animated:false}),100);}},[around,camera]);
+ const challenge=challenges?.find(c=>c.id===raceId);
+ return <SafeAreaView style={{flex:1,backgroundColor:c.bg}} edges={['top']}><View style={{padding:20}}><Header title="Mountain" eyebrow={challenge?.name}/><View style={s.between}><View style={s.row}>{(['mountain','list'] as const).map(v=><TouchableOpacity key={v} accessibilityLabel={`${v} view`} onPress={()=>setView(v)} style={[form.chip,{backgroundColor:view===v?c.pale:c.surface}]}><Text style={{color:c.green,fontWeight:'800'}}>{v==='mountain'?'Mountain':'List'}</Text></TouchableOpacity>)}</View>{view==='mountain'&&<TouchableOpacity onPress={()=>setCamera(camera==='summit'?'me':'summit')}><Text style={{color:c.orange,fontWeight:'700'}}>Summit</Text></TouchableOpacity>}</View>{(challenges?.filter(c=>c.joined).length??0)>1&&<View style={[s.row,{flexWrap:'wrap'}]}>{challenges?.filter(c=>c.joined).map(ch=><TouchableOpacity key={ch.id} onPress={()=>{setRaceId(ch.id);setPage(0);setCamera('me');}} style={form.chip}><Text style={{color:raceId===ch.id?c.orange:c.muted,fontSize:11}}>{ch.name}</Text></TouchableOpacity>)}</View>}{Number(params.passed)>0&&<Text style={form.note}>You passed {params.passed} athletes · #{params.previousRank} → #{around?.current?.rank}</Text>}</View>
+ {!raceId?<View style={{padding:20}}><Empty text="You're not in an active challenge."/><Button title="Browse Challenges" onPress={()=>router.push('/(app)/challenges')}/></View>:error?<View style={{padding:20}}><Text style={form.note}>{error}</Text><Button title="Retry" onPress={refresh}/></View>:loading&&!around?<View style={{padding:20}}><Skeleton/></View>:view==='list'?<><TextInput accessibilityLabel="Search leaderboard" placeholder="Search athlete" placeholderTextColor={c.muted} value={search} onChangeText={v=>{setSearch(v);setPage(0);}} style={[form.field,{marginHorizontal:20}]}/>{board.error&&<Text style={form.note}>{board.error}</Text>}<FlatList data={board.data?.athletes??[]} keyExtractor={a=>a.id} contentContainerStyle={{padding:20}} ListEmptyComponent={<Empty loading={board.loading} text="No athletes found."/>} renderItem={({item:a})=><View style={[s.row,{gap:12,padding:16,borderBottomWidth:1,borderColor:c.border,backgroundColor:a.user_id===user?.id?c.pale:c.surface}]}><Text style={s.section}>#{a.rank}</Text><Avatar name={a.user.name}/><View style={{flex:1}}><Text style={s.section}>{a.user.name}</Text><Text style={s.muted}>{a.level?`Level ${a.level}`:'Under Review'}</Text></View><Text style={[s.section,{color:c.green}]}>{a.sage_score} pts</Text></View>}/><View style={[s.between,{padding:16}]}><TouchableOpacity disabled={!page} onPress={()=>setPage(p=>p-1)}><Text style={s.muted}>Previous</Text></TouchableOpacity><Text style={s.muted}>Page {page+1}</Text><TouchableOpacity disabled={(page+1)*50>=(board.data?.total??0)} onPress={()=>setPage(p=>p+1)}><Text style={s.muted}>Next</Text></TouchableOpacity></View></>:<>
+ <View style={[s.between,{paddingHorizontal:20,paddingBottom:10}]}><TouchableOpacity onPress={()=>{setCamera('range');setOffset(Math.max(0,(rows[0]?.rank??1)-8));}}><Text style={{color:c.green,fontSize:11}}>↑ Higher ranks</Text></TouchableOpacity><Text style={[s.muted,{fontSize:10}]}>Ranks {rows[0]?.rank??0}–{rows[rows.length-1]?.rank??0} · {around?.total??0} athletes</Text><TouchableOpacity onPress={()=>{setCamera('range');setOffset(Math.max(0,(rows[rows.length-1]?.rank??1)-1));}}><Text style={{color:c.green,fontSize:11}}>Lower ↓</Text></TouchableOpacity></View>
+ {camera==='summit'&&<View style={{padding:16,backgroundColor:c.sky}}><Text style={[s.section,{textAlign:'center',color:c.green}]}>⚑ SAGE SUMMIT</Text><View style={[s.row,{justifyContent:'center',alignItems:'flex-end',gap:16,marginTop:14}]}>{[around?.summit[1],around?.summit[0],around?.summit[2]].filter((a):a is BoardAthlete=>!!a).map(a=><View key={a.id} style={{alignItems:'center',maxWidth:'30%',paddingBottom:a.rank===1?24:0}}><Climber name={a.user.name} current={a.user_id===user?.id}/><Text style={s.section}>#{a.rank}</Text><Text numberOfLines={1} style={s.muted}>{a.user.name}</Text><Text style={{color:c.orange,fontWeight:'800',fontSize:12}}>{a.sage_score} pts</Text><View style={{height:8,width:70,backgroundColor:c.green,borderRadius:4,marginTop:8}}/></View>)}</View></View>}
+ <FlatList ref={list} data={rows} keyExtractor={a=>a.id} initialNumToRender={7} windowSize={3} getItemLayout={(_,i)=>({length:heights[i],offset:positions[i],index:i})} style={{backgroundColor:c.sky}} ListEmptyComponent={<Empty text="The mountain is waiting for its first athlete."/>} renderItem={({item:a,index:i})=><View style={{height:heights[i],overflow:'hidden'}}><View style={{position:'absolute',left:0,right:0,top:-positions[i],height:1700}}><MountainArt tall/></View><Animated.View style={{height:'100%',transform:[{translateY:a.user_id===user?.id?climb:0}]}}><ClimberMarker name={a.user.name} current={a.user_id===user?.id} rank={a.rank} score={a.sage_score} gap={a.sage_score-(around?.current?.sage_score??0)} top={40} left={i%2?18:36}/></Animated.View></View>}/>
+ <TouchableOpacity accessibilityLabel="Back to me" onPress={center} style={[s.card,{margin:16,padding:16}]}><View style={s.between}><Text style={s.section}>◎ Back to Me · #{around?.current?.rank??'—'}</Text><Text style={{color:c.orange,fontWeight:'800'}}>{around?.current?.sage_score??0} pts</Text></View><Text style={[s.muted,{fontSize:11}]}>{around?.nextGap?`${around.nextGap} pts to your next rival`:'Keep showing up. Keep climbing.'}</Text></TouchableOpacity>
+ </>}
+ </SafeAreaView>;
 }

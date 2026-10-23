@@ -1,0 +1,14 @@
+const fs=require('node:fs'),assert=require('node:assert/strict'),vm=require('node:vm'),ts=require('typescript');
+assert.equal(fs.readFileSync('lib/gpsRecording.ts','utf8'),fs.readFileSync('supabase/functions/_shared/gpsRecording.ts','utf8'));
+const sandbox={exports:{},Date,Uint8Array};vm.runInNewContext(ts.transpileModule(fs.readFileSync('lib/gpsRecording.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText,sandbox);
+const {recordingSummary,recordedWorkout,recordingBytes}=sandbox.exports,start=Date.now()-120000;
+const point=(seconds,longitude,extra={})=>({latitude:0,longitude,timestamp:start+seconds*1000,accuracy:3,...extra});
+const record={version:1,id:'run_test_1234',userId:'test',sport:'Run',startedAt:start,finishedAt:start+100000,status:'finished',intervals:[{start,end:start+30000},{start:start+60000,end:start+100000}],points:[point(0,0),point(10,.0001),point(20,.0002),point(40,.001),point(60,.001),point(70,.0011),point(80,.0012)],background:true};
+const summary=recordingSummary(record);assert.equal(summary.activeSeconds,70);assert.equal(summary.elapsedSeconds,100);assert(Math.abs(summary.distanceMeters-44.478)<.1);assert.equal(summary.locations.length,6);assert.notEqual(summary.locations[2].segment,summary.locations[3].segment);
+const parsed=recordedWorkout(record);assert.equal(parsed.metrics.sport_type,'Run');assert.equal(parsed.metrics.moving_time_secs,70);assert.equal(parsed.streams.heartRate.length,0);assert.equal(parsed.metrics.distance_meters,44.48);assert.equal(parsed.streams.speed[2].breakBefore,true);
+const bad={...record,points:[...record.points,point(25,1),point(26,.0003,{accuracy:150}),point(27,NaN)]};const filtered=recordingSummary(bad);assert(Math.abs(filtered.distanceMeters-summary.distanceMeters)<.1);assert.equal(filtered.rejectedPoints,3);
+const gap={...record,intervals:[{start,end:start+100000}],points:[point(0,0),point(10,.0001),point(60,.01),point(70,.0101)]};assert(Math.abs(recordingSummary(gap).distanceMeters-22.239)<.1);assert.equal(recordingSummary(gap).gaps,1);
+const stationary={...record,points:[point(0,0),point(10,.000001),point(20,0)]};assert.equal(recordingSummary(stationary).distanceMeters,0);assert.throws(()=>recordedWorkout(stationary),/10 seconds/);
+assert.throws(()=>recordedWorkout({...record,status:'recording',finishedAt:null}),/Finish/);assert.throws(()=>recordingSummary({...record,intervals:[{start,end:start+70000},{start:start+60000,end:start+100000}]}),/pause times/);assert.throws(()=>recordedWorkout({...record,finishedAt:Date.now()+10000000}),/Finish/);
+const unicode={...record,gpsError:'कृपया बाहर जाएँ'};assert.deepEqual(JSON.parse(Buffer.from(recordingBytes(unicode)).toString('utf8')),unicode);
+console.log('PASS: GPS distance, pause exclusion, split segments, bad accuracy/jumps, gaps, stationary drift, unfinished/future/overlapping rejection, UTF-8 uploads and client/server parity.');

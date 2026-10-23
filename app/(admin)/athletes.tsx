@@ -1,169 +1,26 @@
-import { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, Alert, TextInput } from 'react-native';
+import { useState } from 'react';
+import { View,Text,TextInput,TouchableOpacity,Modal,Alert,Share } from 'react-native';
+import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { supabase } from '../../lib/supabase';
-import { User } from '../../types';
-
-type AthleteRow = User & { race_count: number; last_activity: string | null };
-
+import { Page,Header,Avatar,Button,Empty,s } from '../../components/ui/SageUI';
+import { AdminLevelTabs,LevelBadge } from '../../components/ui/AdminLevelsUI';
+import { SageIcon } from '../../components/ui/SageIcon';
+import { useAthleteProfile } from '../../hooks/useProduct';
+import { useAdminLevels,LevelAthlete } from '../../hooks/useAdminLevels';
+import { sageColors as c } from '../../lib/theme';
 export default function AthletesScreen() {
-  const [athletes, setAthletes] = useState<AthleteRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'active' | 'pending' | 'suspended'>('all');
-  const [search, setSearch] = useState('');
-
-  useEffect(() => { load(); }, []);
-
-  async function load() {
-    const { data: users } = await supabase.from('users').select('*').order('created_at', { ascending: false });
-    const { data: entries } = await supabase.from('entries').select('user_id, race_id');
-    const { data: logs } = await supabase
-      .from('activity_logs')
-      .select('user_id, activity_date')
-      .order('activity_date', { ascending: false });
-
-    const lastActivity: Record<string, string> = {};
-    for (const l of logs ?? []) {
-      if (!lastActivity[l.user_id]) lastActivity[l.user_id] = l.activity_date;
-    }
-
-    const raceCounts: Record<string, number> = {};
-    for (const e of entries ?? []) raceCounts[e.user_id] = (raceCounts[e.user_id] ?? 0) + 1;
-
-    setAthletes(
-      (users ?? []).map((u) => ({
-        ...u,
-        race_count: raceCounts[u.id] ?? 0,
-        last_activity: lastActivity[u.id] ?? null,
-      }))
-    );
-    setLoading(false);
-  }
-
-  async function resync(user: User) {
-    const { data: entries } = await supabase
-      .from('entries')
-      .select('race_id')
-      .eq('user_id', user.id);
-
-    if (!entries?.length) { Alert.alert('No races', `${user.name} hasn't joined any races.`); return; }
-
-    for (const entry of entries) {
-      await supabase.functions.invoke('backfill-entry', {
-        body: { user_id: user.id, race_id: entry.race_id },
-      });
-    }
-    Alert.alert('Resynced', `Backfill triggered for ${user.name}.`);
-  }
-
-  async function markReferralPaid(userId: string) {
-    const { error } = await supabase
-      .from('referrals')
-      .update({ cash_paid: true })
-      .eq('referrer_id', userId)
-      .eq('status', 'rewarded')
-      .eq('cash_paid', false);
-    if (!error) Alert.alert('Done', 'Referral marked as paid.');
-    else Alert.alert('Error', error.message);
-  }
-
-  const filtered = athletes
-    .filter((a) => filter === 'all' || a.status === filter)
-    .filter(
-      (a) =>
-        !search ||
-        a.name.toLowerCase().includes(search.toLowerCase()) ||
-        a.email?.toLowerCase().includes(search.toLowerCase())
-    );
-
-  return (
-    <SafeAreaView className="flex-1 bg-sage-bg">
-      <View className="px-4 pt-4 pb-2">
-        <Text className="text-sage-text text-xl font-bold mb-3">Athletes</Text>
-
-        <TextInput
-          className="bg-sage-surface border border-sage-border text-sage-text rounded-xl px-4 py-2.5 mb-3"
-          placeholder="Search by name or email…"
-          placeholderTextColor="#737373"
-          value={search}
-          onChangeText={setSearch}
-        />
-
-        <View className="flex-row gap-2 mb-2">
-          {(['all', 'active', 'pending', 'suspended'] as const).map((f) => (
-            <TouchableOpacity
-              key={f}
-              onPress={() => setFilter(f)}
-              className={`px-3 py-1.5 rounded-full border ${
-                filter === f ? 'bg-sage-surface border-sage-green' : 'bg-transparent border-sage-border'
-              }`}
-            >
-              <Text className={`text-xs font-medium ${filter === f ? 'text-sage-green' : 'text-sage-muted'}`}>
-                {f}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
-
-      <FlatList
-        data={filtered}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={{ paddingHorizontal: 16 }}
-        renderItem={({ item }) => (
-          <View className="bg-sage-surface border border-sage-border rounded-2xl p-4 mb-3">
-            <View className="flex-row justify-between items-start mb-2">
-              <View className="flex-1">
-                <Text className="text-sage-text font-semibold">{item.name}</Text>
-                <Text className="text-sage-muted text-xs">{item.email ?? item.phone}</Text>
-              </View>
-              <View className={`px-2 py-0.5 rounded-full ml-2 ${
-                item.status === 'active' ? 'bg-sage-green/20' :
-                item.status === 'pending' ? 'bg-sage-orange/20' :
-                'bg-red-500/20'
-              }`}>
-                <Text className={`text-xs font-medium ${
-                  item.status === 'active' ? 'text-sage-green' :
-                  item.status === 'pending' ? 'text-sage-orange' :
-                  'text-red-400'
-                }`}>{item.status}</Text>
-              </View>
-            </View>
-
-            <View className="flex-row gap-4 mb-3">
-              <Text className="text-sage-muted text-xs">{item.race_count} races</Text>
-              {item.plan_expires_at && (
-                <Text className="text-sage-muted text-xs">
-                  Expires {new Date(item.plan_expires_at).toLocaleDateString('en-IN')}
-                </Text>
-              )}
-              {item.last_activity && (
-                <Text className="text-sage-muted text-xs">
-                  Last: {new Date(item.last_activity).toLocaleDateString('en-IN')}
-                </Text>
-              )}
-            </View>
-
-            <View className="flex-row gap-2">
-              <TouchableOpacity
-                onPress={() => resync(item)}
-                className="bg-sage-surface border border-sage-border px-3 py-1.5 rounded-full"
-              >
-                <Text className="text-sage-muted text-xs">Resync</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => markReferralPaid(item.id)}
-                className="bg-sage-surface border border-sage-border px-3 py-1.5 rounded-full"
-              >
-                <Text className="text-sage-muted text-xs">Mark referral paid</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
-        ListEmptyComponent={
-          !loading ? <Text className="text-sage-muted text-sm text-center py-8">No athletes.</Text> : null
-        }
-      />
-    </SafeAreaView>
-  );
+  const router=useRouter(), {athletes,loading,error,refresh,saveLevel}=useAdminLevels();
+  const definitions=useAthleteProfile();
+  const [search,setSearch]=useState(''),[filter,setFilter]=useState<'all'|number|'review'>('all');
+  const [selected,setSelected]=useState<LevelAthlete|null>(null),[saving,setSaving]=useState(false);
+  const rows=athletes.filter(a=>(filter==='all'||(filter==='review'?a.level===null:a.level===filter))&&`${a.name} ${a.email??''}`.toLowerCase().includes(search.toLowerCase()));
+  async function assign(level:1|2|null) {if(!selected)return;setSaving(true);try{await saveLevel(selected.id,level);setSelected(null);}catch(e){Alert.alert('Could not save level',(e as Error).message);}finally{setSaving(false);}}
+  async function exportRows() {const cell=(v:unknown)=>`"${String(v??'').replace(/"/g,'""')}"`;const csv=[['Athlete','Email','Level','Workouts','Distance km'],...rows.map(a=>[a.name,a.email,a.level??'Under Review',a.workouts,(a.distance_meters/1000).toFixed(1)])].map(r=>r.map(cell).join(',')).join('\n');try{await Share.share({message:csv,title:'Sage athletes'});}catch(e){Alert.alert('Unable to export',(e as Error).message);}}
+  return <Page><AdminLevelTabs selected="athletes"/><Header title={`${athletes.length} Athletes`} action={<TouchableOpacity onPress={exportRows} style={[s.card,{padding:10}]}><Text style={{color:c.green,fontSize:11,fontWeight:'800'}}>↑ Export</Text></TouchableOpacity>}/><Text style={[s.muted,{marginTop:-17,marginBottom:20}]}>Level assignments and performance review</Text>
+    <TextInput accessibilityLabel="Search athletes" value={search} onChangeText={setSearch} placeholder="Search athlete" placeholderTextColor={c.muted} style={[s.card,{padding:17,color:c.text,marginBottom:16}]}/>
+    <View style={[s.row,{gap:8,marginBottom:24}]}>{(['all',...(definitions.data?.levels??[]).map(l=>l.id),'review'] as const).map(f=><TouchableOpacity key={f} onPress={()=>setFilter(f)} style={{paddingHorizontal:12,paddingVertical:10,borderRadius:22,backgroundColor:filter===f?c.green:c.surface,borderWidth:1,borderColor:c.border}}><Text style={{fontSize:10,fontWeight:'800',color:filter===f?c.onAccent:c.muted}}>{f==='all'?'All':f==='review'?'Under Review':`Level ${f}`}</Text></TouchableOpacity>)}</View>
+    {error?<><Empty text={error}/><Button title="Try again" onPress={refresh}/></>:loading?<Empty loading text=""/>:<><View style={[s.between,{paddingHorizontal:8,marginBottom:12}]}><Text style={s.label}>ATHLETE</Text><Text style={s.label}>TOTAL PERFORMANCE</Text></View><View style={s.card}>{rows.map(a=><TouchableOpacity key={a.id} onPress={()=>router.push({pathname:"/(admin)/athlete-detail",params:{id:a.id}})} style={[s.row,{padding:16,gap:12,borderBottomWidth:1,borderColor:c.border}]}><Avatar name={a.name}/><View style={{flex:1}}><Text style={s.section}>{a.name}</Text><LevelBadge level={a.level}/><Text style={[s.muted,{fontSize:10,marginTop:5}]}>{a.sport_type??'Athlete'} · {a.last_activity?new Date(a.last_activity).toLocaleDateString('en-IN'):'No activity'}</Text></View><View style={{alignItems:'flex-end'}}><Text style={[s.section,{fontSize:22}]}>{a.workouts}</Text><Text style={[s.muted,{fontSize:9}]}>workouts</Text><Text style={[s.muted,{fontSize:10}]}>{(a.distance_meters/1000).toFixed(1)} km</Text></View><SageIcon name="chevron" size={16}/></TouchableOpacity>)}</View>{!rows.length&&<Empty text="No athletes match these filters."/>}</>}
+    <TouchableOpacity onPress={()=>router.push('/(admin)/athlete-management')} style={{padding:20,alignItems:'center'}}><Text style={{color:c.orange,fontWeight:'800'}}>Membership, referrals & sync</Text></TouchableOpacity>
+    <Modal visible={!!selected} animationType="slide" presentationStyle="pageSheet" onRequestClose={()=>{if(!saving)setSelected(null);}}><SafeAreaView style={{flex:1,backgroundColor:c.bg,padding:24}}><Header title={selected?.name??'Athlete'} action={<TouchableOpacity disabled={saving} onPress={()=>setSelected(null)}><Text style={{color:c.orange}}>Done</Text></TouchableOpacity>}/><Text style={[s.muted,{marginBottom:20}]}>Choose the athlete’s training level.</Text>{([1,2,null] as const).map(level=><TouchableOpacity key={level??'review'} disabled={saving} onPress={()=>assign(level)} style={[s.card,{padding:20,marginBottom:12,opacity:saving?0.5:1}]}><Text style={s.section}>{level===1?'Level 1 · Experienced athletes':level===2?'Level 2 · Developing athletes':'Under Review · Unassigned'}</Text></TouchableOpacity>)}<Button title="View workouts" disabled={saving} onPress={()=>{const id=selected?.id;setSelected(null);router.push({pathname:'/(admin)/workouts',params:{athleteId:id}});}}/></SafeAreaView></Modal>
+  </Page>;
 }

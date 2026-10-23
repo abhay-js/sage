@@ -5,9 +5,7 @@ import { supabase } from './supabase';
 WebBrowser.maybeCompleteAuthSession();
 
 const STRAVA_CLIENT_ID = process.env.EXPO_PUBLIC_STRAVA_CLIENT_ID!;
-const STRAVA_CLIENT_SECRET = process.env.EXPO_PUBLIC_STRAVA_CLIENT_SECRET!;
 const STRAVA_AUTH_URL = 'https://www.strava.com/oauth/mobile/authorize';
-const STRAVA_TOKEN_URL = 'https://www.strava.com/oauth/token';
 
 export function useStravaAuth() {
   const redirectUri = AuthSession.makeRedirectUri({ scheme: 'sage', path: 'strava' });
@@ -26,34 +24,15 @@ export function useStravaAuth() {
   return { request, response, promptAsync, redirectUri };
 }
 
-export async function exchangeStravaCode(code: string, redirectUri: string) {
-  const res = await fetch(STRAVA_TOKEN_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      client_id: STRAVA_CLIENT_ID,
-      client_secret: STRAVA_CLIENT_SECRET,
-      code,
-      grant_type: 'authorization_code',
-    }),
-  });
-  if (!res.ok) throw new Error('Strava token exchange failed');
-  return res.json();
+export async function exchangeStravaCode(code:string,redirectUri:string) {
+  const {data,error}=await supabase.functions.invoke('strava-auth',{body:{action:'exchange',code,redirectUri}});
+  if(error||data?.error)throw new Error(data?.error??error?.message??'Strava connection failed');
+  return data;
 }
-
-export async function refreshStravaToken(refreshToken: string) {
-  const res = await fetch(STRAVA_TOKEN_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      client_id: STRAVA_CLIENT_ID,
-      client_secret: STRAVA_CLIENT_SECRET,
-      refresh_token: refreshToken,
-      grant_type: 'refresh_token',
-    }),
-  });
-  if (!res.ok) throw new Error('Strava token refresh failed');
-  return res.json();
+export async function refreshStravaToken(_refreshToken:string) {
+  const {data,error}=await supabase.functions.invoke('strava-auth',{body:{action:'refresh'}});
+  if(error||data?.error)throw new Error(data?.error??error?.message??'Strava refresh failed');
+  return data;
 }
 
 export async function getStravaActivities(
@@ -87,11 +66,5 @@ export async function ensureFreshToken(userId: string, user: {
   if (Date.now() < expiresAt - 60_000) return user.strava_access_token;
 
   const tokens = await refreshStravaToken(user.strava_refresh_token);
-  await supabase.from('users').update({
-    strava_access_token: tokens.access_token,
-    strava_refresh_token: tokens.refresh_token,
-    strava_token_expires_at: new Date(tokens.expires_at * 1000).toISOString(),
-  }).eq('id', userId);
-
   return tokens.access_token;
 }

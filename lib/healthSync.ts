@@ -1,191 +1,70 @@
-/**
- * Health platform sync — reads workouts from Apple Health (iOS) or
- * Health Connect (Android) and upserts them to Supabase activity_logs.
- *
- * Requires a development build (EAS Build) — does NOT work in Expo Go.
- * Check __DEV__ + Platform before calling any health APIs.
- */
-import { Platform, Alert } from 'react-native';
+import { Platform } from 'react-native';
 import { supabase } from './supabase';
-
-// ── Sport type mapping ────────────────────────────────────────────────────
-
-const IOS_TYPE_MAP: Record<number, string> = {
-  37: 'Run',           // HKWorkoutActivityTypeRunning
-  13: 'Ride',          // HKWorkoutActivityTypeCycling
-  46: 'Swim',          // HKWorkoutActivityTypeSwimming
-  24: 'Hike',          // HKWorkoutActivityTypeHiking
-  50: 'WeightTraining',// HKWorkoutActivityTypeTraditionalStrengthTraining
-  55: 'Rowing',        // HKWorkoutActivityTypeRowing
-  20: 'Run',           // HKWorkoutActivityTypeTrackAndField
-  63: 'Run',           // HKWorkoutActivityTypeWalking
-};
-
-const ANDROID_TYPE_MAP: Record<string, string> = {
-  'RUNNING': 'Run',
-  'BIKING': 'Ride',
-  'SWIMMING_POOL': 'Swim',
-  'SWIMMING_OPEN_WATER': 'Swim',
-  'HIKING': 'Hike',
-  'STRENGTH_TRAINING': 'WeightTraining',
-  'ROWING_MACHINE': 'Rowing',
-  'WALKING': 'Walk',
-};
-
-// ── iOS HealthKit ─────────────────────────────────────────────────────────
-
-async function syncIOS(userId: string, since: Date): Promise<number> {
-  // Dynamically import so the module doesn't break Android or Expo Go
-  let AppleHealthKit: any;
-  try {
-    AppleHealthKit = require('react-native-health').default;
-  } catch {
-    Alert.alert('Not available', 'Apple Health sync requires a development build.');
-    return 0;
-  }
-
-  // Request permissions
-  await new Promise<void>((resolve, reject) => {
-    AppleHealthKit.initHealthKit(
-      {
-        permissions: {
-          read: [
-            AppleHealthKit.Constants.Permissions.Workout,
-            AppleHealthKit.Constants.Permissions.HeartRate,
-            AppleHealthKit.Constants.Permissions.DistanceWalkingRunning,
-            AppleHealthKit.Constants.Permissions.DistanceCycling,
-            AppleHealthKit.Constants.Permissions.ActiveEnergyBurned,
-          ],
-          write: [],
-        },
-      },
-      (err: any) => (err ? reject(new Error(err)) : resolve()),
-    );
-  });
-
-  // Fetch workouts
-  const workouts: any[] = await new Promise((resolve, reject) => {
-    AppleHealthKit.getSamples(
-      {
-        startDate: since.toISOString(),
-        endDate: new Date().toISOString(),
-        type: 'Workout',
-      },
-      (err: any, results: any[]) => (err ? reject(err) : resolve(results ?? [])),
-    );
-  });
-
-  if (workouts.length === 0) return 0;
-
-  const rows = workouts.map((w: any) => ({
-    user_id: userId,
-    strava_activity_id: `health_ios_${w.id ?? w.startDate}`,
-    sport_type: IOS_TYPE_MAP[w.activityType] ?? 'Workout',
-    activity_name: w.sourceName ?? 'Apple Health workout',
-    activity_date: w.startDate.split('T')[0],
-    moving_time_secs: Math.round((new Date(w.endDate).getTime() - new Date(w.startDate).getTime()) / 1000),
-    elapsed_time_secs: Math.round((new Date(w.endDate).getTime() - new Date(w.startDate).getTime()) / 1000),
-    distance_meters: w.distance ? w.distance * 1000 : null,    // HealthKit gives km
-    avg_heartrate: w.heartRate?.average ?? null,
-    max_heartrate: w.heartRate?.max ?? null,
-    calories: w.calories ?? null,
-    elevation_gain: w.elevationAscended ?? null,
-    avg_speed: null,
-  }));
-
-  const { error } = await supabase.from('activity_logs').upsert(rows, {
-    onConflict: 'strava_activity_id',
-    ignoreDuplicates: false,
-  });
-
-  if (error) throw new Error(error.message);
-  return rows.length;
+import { HealthRow,androidSports,baseRow,heartSummary,healthReadSince,intervalTotal,iosWorkout,isGarmin } from './healthWorkouts';
+export function healthPlatformName():string{return Platform.OS==='ios'?'Apple Health':Platform.OS==='android'?'Health Connect':'Health imports';}
+function healthCall<T>(run:(cb:(error:any,data:T)=>void)=>void):Promise<T>{
+  return new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(new Error('Health lookup timed out. Try again.')),30000);try{run((error,data)=>{clearTimeout(timer);error?reject(new Error(String(error))):resolve(data);});}catch(e){clearTimeout(timer);reject(e);}});
 }
-
-// ── Android Health Connect ────────────────────────────────────────────────
-
-async function syncAndroid(userId: string, since: Date): Promise<number> {
-  let HC: any;
-  try {
-    HC = require('react-native-health-connect');
-  } catch {
-    Alert.alert('Not available', 'Health Connect sync requires a development build.');
-    return 0;
-  }
-
-  const available = await HC.initialize();
-  if (!available) {
-    Alert.alert('Health Connect not installed', 'Install Health Connect from the Play Store to use this feature.');
-    return 0;
-  }
-
-  await HC.requestPermission([
-    { accessType: 'read', recordType: 'ExerciseSession' },
-    { accessType: 'read', recordType: 'Distance' },
-    { accessType: 'read', recordType: 'HeartRate' },
-    { accessType: 'read', recordType: 'TotalCaloriesBurned' },
-    { accessType: 'read', recordType: 'ElevationGained' },
-  ]);
-
-  const { records } = await HC.readRecords('ExerciseSession', {
-    timeRangeFilter: {
-      operator: 'after',
-      startTime: since.toISOString(),
-    },
-  });
-
-  if (!records?.length) return 0;
-
-  const rows = records.map((r: any) => ({
-    user_id: userId,
-    strava_activity_id: `health_android_${r.metadata?.id ?? r.startTime}`,
-    sport_type: ANDROID_TYPE_MAP[r.exerciseType] ?? 'Workout',
-    activity_name: r.title ?? 'Health Connect workout',
-    activity_date: r.startTime.split('T')[0],
-    moving_time_secs: Math.round(
-      (new Date(r.endTime).getTime() - new Date(r.startTime).getTime()) / 1000,
-    ),
-    elapsed_time_secs: Math.round(
-      (new Date(r.endTime).getTime() - new Date(r.startTime).getTime()) / 1000,
-    ),
-    distance_meters: r.distance?.inMeters ?? null,
-    avg_heartrate: null,
-    max_heartrate: null,
-    calories: r.energy?.inKilocalories ?? null,
-    elevation_gain: r.elevation?.inMeters ?? null,
-    avg_speed: null,
-  }));
-
-  const { error } = await supabase.from('activity_logs').upsert(rows, {
-    onConflict: 'strava_activity_id',
-    ignoreDuplicates: false,
-  });
-
-  if (error) throw new Error(error.message);
-  return rows.length;
+export async function readAndroidPages(HC:any,type:string,options:any):Promise<any[]>{
+  const records:any[]=[];let token:string|undefined;const seen=new Set<string>();
+  do{const page=await HC.readRecords(type,{...options,pageSize:500,pageToken:token});records.push(...(page.records??[]));token=page.pageToken||undefined;
+    if(token){if(seen.has(token)||seen.size>=100)throw new Error('Health Connect returned too much data. Try a shorter import window.');seen.add(token);}
+  }while(token);return records;
 }
-
-// ── Public API ────────────────────────────────────────────────────────────
-
-/**
- * Syncs workouts from the device's health platform (Apple Health or Health Connect).
- * Uses the same incremental logic as Strava backfill — only fetches since last known activity.
- * Returns the number of new activities synced.
- */
-export async function syncHealthPlatform(
-  userId: string,
-  lastActivityDate: Date | null,
-): Promise<number> {
-  // Default: fetch last 90 days on first sync
-  const since = lastActivityDate
-    ? new Date(lastActivityDate.getTime() - 86400 * 1000) // 1 day buffer
-    : new Date(Date.now() - 90 * 86400 * 1000);
-
-  if (Platform.OS === 'ios') return syncIOS(userId, since);
-  if (Platform.OS === 'android') return syncAndroid(userId, since);
-  return 0;
+async function syncIOS(userId:string,since:Date,_requestPermissions:boolean):Promise<HealthRow[]>{
+  const mod=require('react-native-health'),HK=mod.default??mod;
+  if(typeof HK.initHealthKit!=='function')throw new Error('Install the native Sage app to connect Apple Health.');
+  // Creates the native Health store. Previously requested iOS permissions do not prompt again.
+  await healthCall(cb=>HK.initHealthKit({permissions:{read:['Workout','HeartRate','DistanceWalkingRunning','DistanceCycling','ActiveEnergyBurned'].map(p=>HK.Constants.Permissions[p]),write:[]}},(error:any)=>cb(error,null)));
+  const workouts=await healthCall<any[]>(cb=>HK.getSamples({startDate:since.toISOString(),endDate:new Date().toISOString(),type:'Workout'},cb));
+  const rows:HealthRow[]=[];
+  for(const w of workouts??[]){const row=iosWorkout(userId,w);if(!row)continue;
+    // Garmin exports no detailed workout HR; do not substitute its all-day readings.
+    if(!isGarmin(`${w.sourceName??''} ${w.sourceId??''}`)){
+      const samples=await healthCall<any[]>(cb=>HK.getHeartRateSamples({unit:'bpm',startDate:w.start,endDate:w.end,ascending:true},cb)).catch(()=>[]);
+      Object.assign(row,heartSummary(samples,w.start,w.end,w.sourceId));
+    }rows.push(row);
+  }return rows;
 }
-
-export function healthPlatformName(): string {
-  return Platform.OS === 'ios' ? 'Apple Health' : 'Health Connect';
+async function syncAndroid(userId:string,since:Date,requestPermissions:boolean):Promise<HealthRow[]>{
+  const HC=require('react-native-health-connect');
+  if(!await HC.initialize())throw new Error('Health Connect is unavailable. Install or update it, then try again.');
+  const types=['ExerciseSession','Distance','HeartRate','ActiveCaloriesBurned','ElevationGained'];
+  const granted=requestPermissions?await HC.requestPermission(types.map(recordType=>({accessType:'read',recordType}))):await HC.getGrantedPermissions();
+  const allowed=new Set(granted.filter((p:any)=>p.accessType==='read').map((p:any)=>p.recordType));
+  if(!allowed.has('ExerciseSession'))throw new Error('Allow Sage to read Exercise sessions in Health Connect.');
+  const sessions=await readAndroidPages(HC,'ExerciseSession',{timeRangeFilter:{operator:'between',startTime:since.toISOString(),endTime:new Date().toISOString()}});
+  const rows:HealthRow[]=[];
+  for(const w of sessions){const origin=w.metadata?.dataOrigin;
+    if(!origin||/strava/i.test(origin)||w.metadata?.recordingMethod===3)continue;
+    const row=baseRow(userId,'android',w.metadata?.id,w.startTime,w.endTime,androidSports[w.exerciseType]??'Workout',`${/garmin/i.test(origin)?'Garmin':'Health Connect'} · ${w.title||androidSports[w.exerciseType]||'Workout'}`);
+    if(!row)continue;row.indoor=[9,54,57].includes(w.exerciseType)?true:null;
+    const options={timeRangeFilter:{operator:'between',startTime:w.startTime,endTime:w.endTime},dataOriginFilter:[origin]};
+    const optional=async(type:string)=>allowed.has(type)?readAndroidPages(HC,type,options):[];
+    const [dist,heart,calories,elevation]=await Promise.all(['Distance','HeartRate','ActiveCaloriesBurned','ElevationGained'].map(optional));
+    row.distance_meters=intervalTotal(dist,w.startTime,w.endTime,r=>r.distance?.inMeters);
+    row.calories=intervalTotal(calories,w.startTime,w.endTime,r=>r.energy?.inKilocalories);
+    row.elevation_gain=intervalTotal(elevation,w.startTime,w.endTime,r=>r.elevation?.inMeters);
+    Object.assign(row,heartSummary(heart.flatMap(r=>r.samples??[]),w.startTime,w.endTime));
+    row.avg_speed=row.distance_meters==null?null:row.distance_meters/row.moving_time_secs;rows.push(row);
+  }return rows;
+}
+const pending=new Map<string,Promise<number>>();
+export function syncHealthPlatform(userId:string,lastActivityDate:Date|null,options:{requestPermissions?:boolean;shouldContinue?:()=>boolean}={}):Promise<number>{
+  if(Platform.OS==='web')return Promise.reject(new Error('Health imports require the native Sage app. Use FIT upload on the website.'));
+  const key=`${Platform.OS}:${userId}`,running=pending.get(key);if(running)return running;
+  const work=(async()=>{
+    const platform=Platform.OS==='ios'?'ios':'android',since=healthReadSince(lastActivityDate,platform);
+    const rows=await(platform==='ios'?syncIOS:syncAndroid)(userId,since,options.requestPermissions??true);
+    if(options.shouldContinue&&!options.shouldContinue())throw new Error('Health import stopped.');
+    const {data:{user},error:authError}=await supabase.auth.getUser();
+    if(authError||user?.id!==userId)throw new Error('Your Sage account changed. Sign in again before importing.');
+    let inserted=0;const unique=[...new Map(rows.map(r=>[r.strava_activity_id,r])).values()];
+    for(let start=0;start<unique.length;start+=100){if(options.shouldContinue&&!options.shouldContinue())throw new Error('Health import stopped.');const batch=unique.slice(start,start+100);
+      const {data:existing,error:readError}=await supabase.from('activity_logs').select('strava_activity_id').eq('user_id',userId).in('strava_activity_id',batch.map(r=>r.strava_activity_id));
+      if(readError)throw new Error(readError.message);
+      const {error}=await supabase.from('activity_logs').upsert(batch,{onConflict:'strava_activity_id',ignoreDuplicates:false});
+      if(error)throw new Error(error.message);const known=new Set((existing??[]).map(r=>r.strava_activity_id));inserted+=batch.filter(r=>!known.has(r.strava_activity_id)).length;
+    }return inserted;
+  })();pending.set(key,work);void work.finally(()=>pending.delete(key)).catch(()=>{});return work;
 }

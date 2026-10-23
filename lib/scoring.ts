@@ -1,3 +1,4 @@
+// Legacy display helper; persisted scores are calculated by sage_process_workouts.
 import {
   SCORE_PER_SESSION,
   SCORE_PER_HOUR,
@@ -16,7 +17,8 @@ export function computeScore(
 
   const qualifying = activities.filter((a) => {
     const t = new Date(a.activity_date).getTime();
-    return race.sport_types.includes(a.sport_type) && t >= start && t <= end;
+    const review = a.review_status;
+    return review === 'approved' && race.sport_types.includes(a.sport_type) && t >= start && t <= end;
   });
 
   const sessions = qualifying.length;

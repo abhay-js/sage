@@ -8,7 +8,7 @@ A React Native app for endurance athletes in India. Athletes join training chall
 
 | Layer | Technology |
 |---|---|
-| Mobile | React Native · Expo SDK 54 · Expo Router v3 |
+| Mobile | React Native · Expo SDK 52 · Expo Router v4 |
 | Styling | NativeWind (Tailwind CSS) |
 | Backend | Supabase (Postgres · Auth · Storage · Edge Functions) |
 | Activity sync | Strava OAuth + Webhook · Apple Health · Health Connect |
@@ -20,7 +20,7 @@ A React Native app for endurance athletes in India. Athletes join training chall
 
 ### Prerequisites
 
-- Node.js v20+ (via nvm)
+- Node.js v20 (via nvm)
 - Expo Go on your phone (iOS/Android)
 - Supabase project
 - Strava API application
@@ -28,7 +28,7 @@ A React Native app for endurance athletes in India. Athletes join training chall
 ### Install
 
 ```bash
-npm install --legacy-peer-deps
+npm install
 ```
 
 ### Environment variables
@@ -46,10 +46,41 @@ EXPO_PUBLIC_STRAVA_CLIENT_SECRET=your-strava-client-secret
 
 ```bash
 export PATH="/Users/$(whoami)/.nvm/versions/node/v20.20.2/bin:$PATH"
-node node_modules/expo/node_modules/@expo/cli/build/bin/cli start --clear
+npm start -- --clear
 ```
 
-Open Expo Go → connect to `exp://<your-local-ip>:8081`
+This checkout uses Expo SDK 52 to support local builds with Xcode 15.4. The current
+App Store Expo Go does not support this older SDK on a physical iPhone. Use a native
+development build instead:
+
+```bash
+npm run ios
+```
+
+Connect your iPhone by USB, trust the Mac, and enable Developer Mode. In Xcode,
+add your Apple account and select its development team under Signing & Capabilities.
+Your iPhone's iOS version must also be supported by Xcode 15.4.
+If Xcode reports that iOS 17.5 is not installed, install its iOS platform support
+from Xcode Settings → Platforms before building. The first native build
+may need code-signing setup before installation.
+
+If CocoaPods reports an encoding error, run from `ios/`:
+
+```bash
+LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 pod install
+```
+
+To install a standalone preview that does not need Metro or a local Wi-Fi server:
+
+```bash
+npm run ios:preview
+```
+
+This Release build embeds JavaScript and assets. Internet is still needed for
+sign-in and backend data. Code changes require another build and installation.
+
+For the web app, run `npm run web`. Apple Health is still a separate native integration;
+the SDK downgrade alone does not install Sage's missing health module.
 
 ---
 
@@ -80,10 +111,11 @@ Full column definitions are in `memory/db_schema.md`.
 ### Auth flow
 
 ```
-Strava OAuth → exchange code → find-or-create Supabase user
-email: athlete.{strava_id}@strava.app
-password: strava_{strava_id}_sage
-→ save tokens → router routes by user.status + user.role
+Email + password → Supabase Auth → create pending athlete profile
+→ router routes by user.status + user.role
+
+Google login is currently disabled. If email confirmation is enabled in Supabase,
+confirm the account from the email before signing in on the phone.
 ```
 
 ### Activity sync
@@ -156,7 +188,7 @@ Constants in `lib/config.ts`.
 app/
   _layout.tsx              Root (auth routing)
   pending.tsx              Role selector for new users
-  (auth)/login.tsx         Strava OAuth login
+  (auth)/login.tsx         Email and password login
   (auth)/strava.tsx        Strava reconnect
   (admin)/                 Admin dashboard
   (app)/

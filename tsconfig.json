@@ -14,5 +14,12 @@
     ".expo/types/**/*.ts",
     "expo-env.d.ts",
     "nativewind-env.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "expo-healthkit",
+    "GamifiedFitnessChallengeApp-main",
+    "supabase/functions",
+    "GamifiedFitnessChallengeApp-main_2"
   ]
 }

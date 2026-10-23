@@ -38,3 +38,9 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+.vercel/
+.local/garmin/
+
+# Generated APK downloads
+/public/downloads/*.apk
+/public/downloads/*.sha256
