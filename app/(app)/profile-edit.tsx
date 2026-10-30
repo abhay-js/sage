@@ -1,2 +1,2 @@
-import { AthleteProfileForm } from '../../components/ui/AthleteProfileForm';
-export default function EditProfile(){return <AthleteProfileForm editing/>;}
+import { DawnProfileEditor } from '../../components/ui/DawnProfileEditor';
+export default function EditProfile(){return <DawnProfileEditor editing/>;}

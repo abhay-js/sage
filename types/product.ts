@@ -1,6 +1,11 @@
 import { ActivityLog } from './index';
+import { AthleteAvatar } from '../lib/avatar';
+import type { AthleteBenchmarks } from '../lib/athleteStory';
 export type AthleteSport = 'RUN'|'RIDE'|'SWIM'|'TRIATHLON'|'HYROX'|'STRENGTH'|'OTHER';
 export interface AthleteProfile {
+  dawn_answers?: import('../lib/dawnProfile').DawnAnswers | null;
+  age?: number|null; gender_description?: string|null; benchmarks?: AthleteBenchmarks;
+  avatar?: AthleteAvatar | null;
   user_id:string; full_name:string; profile_image_url?:string|null; gender?:string|null; date_of_birth?:string|null;
   city?:string; country?:string; sports:AthleteSport[]; primary_sport?:AthleteSport;
   events:string[]; goal_name?:string; goal_date?:string|null; goal_target?:string;
@@ -23,7 +28,7 @@ export interface ProductChallenge {
   config:ChallengeConfiguration;eligible_levels:number[];participant_count:number;joined:boolean;level_at_join:number|null;
   eligibility:'ELIGIBLE'|'NOT_ELIGIBLE'|'PENDING_LEVEL_REVIEW';sage_score:number;rank:number|null;revision:number;
 }
-export interface BoardAthlete {id:string;user_id:string;sage_score:number;rank:number;level:number|null;user:{name:string;avatarUrl?:string|null};sessions:number;streak:number;total_hours:number}
+export interface BoardAthlete {id:string;user_id:string;sage_score:number;rank:number;level:number|null;user:{name:string;avatarUrl?:string|null;avatar?:AthleteAvatar|null};sessions:number;streak:number;total_hours:number}
 export interface AroundMe {current:BoardAthlete|null;above:BoardAthlete[];below:BoardAthlete[];summit:BoardAthlete[];total:number;nextGap:number|null}
 export interface ScoreAudit {activity_id:string;race_id:string;race_name?:string;base_points:number;bonus_points:number;total_points:number;status:'COUNTED'|'PENDING'|'REJECTED'|'DAILY_CAP'|'BELOW_THRESHOLD';bonuses:{id:string;label:string;points:number}[]}
 export interface SyncResult {imported:number;challenges:{id:string;name:string;beforePoints:number;afterPoints:number;beforeRank:number|null;afterRank:number|null;passed:number;nextGap:number|null}[]}

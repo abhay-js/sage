@@ -40,7 +40,7 @@ export function DatePickerField({ value, onChange, mode, minimumDate }: Props) {
             mode={mode}
             minimumDate={minimumDate}
             display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-            themeVariant="dark"
+            themeVariant="light"
             onChange={(_, selected) => {
               if (Platform.OS !== 'ios') setShow(false);
               if (selected) onChange(selected);

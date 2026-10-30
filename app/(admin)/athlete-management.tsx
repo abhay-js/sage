@@ -1,3 +1,4 @@
+import {sageColors as c} from '../../lib/theme';
 import { useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, Alert, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -79,14 +80,14 @@ export default function AthletesScreen() {
     );
 
   return (
-    <SafeAreaView className="flex-1 bg-sage-bg">
+    <SafeAreaView edges={['left','right']} className="flex-1 bg-sage-bg">
       <View className="px-4 pt-4 pb-2">
         <Text className="text-sage-text text-xl font-bold mb-3">Athletes</Text>
 
         <TextInput
           className="bg-sage-surface border border-sage-border text-sage-text rounded-xl px-4 py-2.5 mb-3"
           placeholder="Search by name or email…"
-          placeholderTextColor="#737373"
+          placeholderTextColor={c.muted}
           value={search}
           onChangeText={setSearch}
         />

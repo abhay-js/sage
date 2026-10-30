@@ -16,7 +16,7 @@ export function useActivities(userId?: string) {
     const { data: reviews } = data?.length ? await supabase.from('workout_reviews').select('activity_id,status,reason') : { data: [] };
     const byId = new Map((reviews ?? []).map(r => [r.activity_id,r]));
     if(owner.current!==userId)return;
-    setActivities((data ?? []).map(a => ({...a,review_status:byId.get(a.id)?.status ?? 'pending',review_reason:byId.get(a.id)?.reason ?? null})));
+    setActivities((data ?? []).map(a => ({...a,review_status:byId.get(a.id)?.status ?? 'approved',review_reason:byId.get(a.id)?.reason ?? null})));
     setLoading(false);
   }, [userId]);
   useEffect(() => { setActivities([]);refetch(); }, [refetch]);

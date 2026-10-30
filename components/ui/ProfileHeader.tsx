@@ -1,12 +1,12 @@
 import { Text, TouchableOpacity, View, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { sageColors as c } from '../../lib/theme';
+import { adventureColors as c } from '../../lib/theme';
 import { SageIcon } from './SageIcon';
 
 export function ProfileHeader({ title, detail = false }: { title: string; detail?: boolean }) {
   const router = useRouter();
   return <View style={styles.header}>
-    <TouchableOpacity accessibilityRole="button" accessibilityLabel={detail ? 'Back to profile' : 'Back to home'} onPress={() => router.canGoBack() ? router.back() : router.replace(detail ? '/(app)/profile' : '/(app)/home')} style={styles.back}>
+    <TouchableOpacity accessibilityRole="button" accessibilityLabel={detail ? 'Back to profile' : 'Back to home'} onPress={() => router.replace(detail ? '/(app)/log' : '/(app)/home')} style={styles.back}>
       <View style={{ transform: [{ rotate: '180deg' }] }}><SageIcon name="arrow" size={21} color={c.text} /></View>
     </TouchableOpacity>
     <Text accessibilityRole="header" style={styles.title}>{title}</Text>

@@ -1,0 +1,6 @@
+import {useLocalSearchParams,useRouter} from 'expo-router';
+import {useAthleteProfile,useProductChallenges} from '../../hooks/useProduct';
+import {ChallengeRulesV2} from '../../components/ui/ChallengeRulesV2';
+import {Page,Header,Button,Empty} from '../../components/ui/AdventureUI';
+import {preferredChallenge} from '../../lib/challengeExperience';
+export default function ChallengeRulesScreen(){const {id}=useLocalSearchParams<{id?:string}>(),router=useRouter(),catalog=useProductChallenges(),athlete=useAthleteProfile();const challenge=id?(catalog.data??[]).find(ch=>ch.id===id):preferredChallenge(catalog.data??[]);const climb=()=>challenge?router.replace({pathname:'/(app)/ranks',params:{raceId:challenge.id,view:'mountain'}}):router.replace('/(app)/challenges');return challenge?<ChallengeRulesV2 challenge={challenge} level={athlete.data?.level} levels={athlete.data?.levels} onBack={()=>router.canGoBack()?router.back():climb()} onClimb={climb}/>:<Page brand={false}><Header title="Challenge rules"/>{catalog.loading?<Empty loading text="Loading the rules…"/>:<><Empty text={catalog.error?'The rules couldn’t load.':'This challenge is unavailable.'}/><Button title={catalog.error?'Retry rules':'Browse challenges'} onPress={catalog.error?catalog.refresh:()=>router.replace('/(app)/challenges')}/></>}</Page>;}

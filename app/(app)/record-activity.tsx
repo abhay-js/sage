@@ -1,35 +1,50 @@
-import {useMemo,useState} from 'react';
-import {View,Text,TouchableOpacity,TextInput,Platform,Linking} from 'react-native';
-import {useRouter} from 'expo-router';
-import {Page,Header,Button,Empty,s} from '../../components/ui/SageUI';
-import {RecordingRouteMap} from '../../components/ui/RecordingRouteMap';
-import {MetricGrid} from '../../components/ui/ProductUI';
-import {sageColors as c} from '../../lib/theme';
-import {formatPace} from '../../lib/activityMetrics';
-import {recordingSummary,RecordingSport} from '../../lib/gpsRecording';
-import {useGpsRecorder} from '../../hooks/useGpsRecorder';
-function duration(seconds:number){return `${Math.floor(seconds/3600)?Math.floor(seconds/3600)+':':''}${String(Math.floor(seconds/60)%60).padStart(2,'0')}:${String(seconds%60).padStart(2,'0')}`;}
-export default function RecordActivity(){
- const router=useRouter(),recorder=useGpsRecorder(),[sport,setSport]=useState<RecordingSport>('Run'),[note,setNote]=useState(''),[saved,setSaved]=useState(''),[confirmDiscard,setConfirmDiscard]=useState(false);
- const record=recorder.record,measured=useMemo(()=>record?recordingSummary(record,Date.now()):null,[record]);
- const summary=record&&measured?{...measured,activeSeconds:Math.floor(record.intervals.reduce((total,v)=>total+(v.end??recorder.now)-v.start,0)/1000),elapsedSeconds:Math.ceil(((record.finishedAt??recorder.now)-record.startedAt)/1000)}:null;
- const mode=record?.sport??sport,recording=record?.status==='recording',finished=record?.status==='finished';
- const last=record?.points[record.points.length-1],stale=recording&&(!last||recorder.now-last.timestamp>20000);
- async function save(){const result=await recorder.save(note);if(result){setSaved(result.created?'Workout submitted for admin review.':`Workout already submitted · ${result.status}`);setNote('');}}
- return <Page><Header title={finished?'Your recorded workout':'Record activity'} eyebrow="Your next workout" action={<TouchableOpacity onPress={()=>router.back()}><Text style={{color:c.orange,fontWeight:'800'}}>Back</Text></TouchableOpacity>}/>
- {Platform.OS==='web'?<Empty text="Open Sage on your iPhone or Android phone to record a GPS workout."/>:<>
- {!record&&<><View style={[s.card,{padding:20,marginBottom:18}]}><Text style={[s.title,{fontSize:24}]}>Ready to move?</Text><Text style={[s.muted,{marginTop:8}]}>Choose your sport, then start your outdoor workout. Your phone records the GPS route.</Text></View><Text style={s.muted}>Start recording outdoors. Sage automatically records your route, distance, active time and pace. Finish to send the workout for admin approval.</Text><View style={[s.row,{gap:12,marginVertical:20}]}>{(['Run','Walk','Ride'] as RecordingSport[]).map(v=><TouchableOpacity key={v} disabled={recorder.busy} onPress={()=>setSport(v)} style={{padding:15,borderRadius:14,backgroundColor:v===sport?c.green:c.surface}}><Text style={{color:v===sport?c.onAccent:c.text,fontWeight:'800'}}>{v}</Text></TouchableOpacity>)}</View><Text style={[s.muted,{marginBottom:18}]}>Allow precise location. Allow background location to keep recording with your screen locked. Tracking stops when you pause or finish.</Text><Button title={recorder.busy?'Starting GPS…':`Start ${sport.toLowerCase()}`} disabled={recorder.busy||recorder.loading} onPress={()=>{setSaved('');void recorder.start(sport);}}/></>}
- {record&&summary&&<><View style={[s.between,{marginBottom:18}]}><Text style={s.section}>{mode} · {recording?'Recording':finished?'Finished':'Paused'}</Text><View style={{height:10,width:10,borderRadius:5,backgroundColor:recording?c.orange:c.green}}/></View>
- <MetricGrid items={[["Distance",`${(summary.distanceMeters/1000).toFixed(2)} km`],["Active time",duration(summary.activeSeconds)],[mode==='Ride'?'Average speed':'Average pace',summary.distanceMeters>0?(mode==='Ride'?`${(summary.distanceMeters/Math.max(1,summary.activeSeconds)*3.6).toFixed(1)} km/h`:`${formatPace(summary.activeSeconds/60/(summary.distanceMeters/1000))} /km`):'—'],["Elapsed",duration(summary.elapsedSeconds)]]}/>
- <RecordingRouteMap points={summary.locations} live={recording}/>
- {recording&&<Text style={[s.muted,{marginBottom:14}]}>{stale?'GPS signal is weak or not ready. Missing movement will not be invented.':`GPS accuracy about ${Math.round(last!.accuracy)} m · ${record.background?'Screen-lock recording enabled':'Keep Sage open; background location was not allowed'}`}</Text>}
- {!record.background&&!finished&&<Text style={{color:c.orange,marginBottom:14}}>This workout pauses when you leave Sage. Enable Always location access in Settings for recording with the screen locked.</Text>}
- {record.gpsError&&<Text style={{color:c.orange,marginBottom:14}}>{record.gpsError}</Text>}
- {!finished?<View style={{gap:12}}><Button title={recorder.busy?'Updating…':recording?'Pause':'Resume'} disabled={recorder.busy} onPress={()=>void(recording?recorder.pause():recorder.resume())}/><Button title="Finish workout" disabled={recorder.busy} onPress={()=>void recorder.finish()}/></View>:<><Text style={s.muted}>Recorded metrics are filled automatically. Heart rate requires a separate watch or sensor and is not measured by phone GPS.</Text><TextInput accessibilityLabel="Note for admin" placeholder="Note for admin (optional)" placeholderTextColor={c.muted} multiline maxLength={1000} value={note} onChangeText={setNote} style={[s.card,{padding:16,color:c.text,marginVertical:16}]}/><Button title={recorder.busy?'Submitting…':'Save & submit for review'} disabled={recorder.busy||summary.distanceMeters<10||summary.activeSeconds<10} onPress={()=>void save()}/>{(summary.distanceMeters<10||summary.activeSeconds<10)&&<Text style={[s.muted,{marginTop:12}]}>A workout needs at least 10 seconds and 10 metres of valid GPS movement to submit.</Text>}<Text style={[s.muted,{marginTop:12}]}>Saved locally until submitted. If you are offline, come back here later to retry.</Text></>}
- <TouchableOpacity disabled={recorder.busy} onPress={()=>setConfirmDiscard(true)} style={{padding:18}}><Text style={{color:c.muted,textAlign:'center'}}>Discard workout</Text></TouchableOpacity>{confirmDiscard&&<View style={[s.card,{padding:18,gap:12}]}><Text style={s.section}>Discard this recorded workout?</Text><Text style={s.muted}>Its unsent route and metrics will be removed from this phone.</Text><Button title="Discard workout" disabled={recorder.busy} onPress={()=>{setConfirmDiscard(false);void recorder.discard();}}/><TouchableOpacity onPress={()=>setConfirmDiscard(false)}><Text style={{color:c.green,textAlign:'center'}}>Keep workout</Text></TouchableOpacity></View>}
- </>}
- {recorder.error&&<View style={{marginTop:16}}><Text accessibilityRole="alert" style={{color:c.orange}}>{recorder.error}</Text><TouchableOpacity onPress={()=>void Linking.openSettings()}><Text style={{color:c.green,marginTop:12}}>Open phone settings</Text></TouchableOpacity></View>}
- {saved&&<View style={{marginTop:18,gap:12}}><Text accessibilityRole="alert" style={s.section}>{saved}</Text><Button title="View submissions" onPress={()=>router.push('/(app)/submit-activity')}/></View>}
- </>}
- </Page>;
+import { useEffect, useState } from 'react';
+import { View, Text, TouchableOpacity, Platform, Linking } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Page, Header, BackAction, Button, Empty, Sheet, s } from '../../components/ui/AdventureUI';
+import { RecordingSession } from '../../components/ui/RecordingSession';
+import { RecorderPreviewMap } from '../../components/ui/RecorderPreviewMap';
+import { adventureColors as c } from '../../lib/theme';
+import { RecordingSport } from '../../lib/gpsRecording';
+import { useGpsRecorder } from '../../hooks/useGpsRecorder';
+import { useProductChallenges } from '../../hooks/useProduct';
+import { challengeTiming, preferredChallenge, scoringSummary, sportLabel } from '../../lib/challengeExperience';
+
+export default function RecordActivity() {
+  const router = useRouter(), params = useLocalSearchParams<{raceId?:string}>();
+  const catalog = useProductChallenges(), recorder = useGpsRecorder();
+  const [sport, setSport] = useState<RecordingSport|'Swim'|'WeightTraining'>('Run'), [selectedId, setSelectedId] = useState<string>(), [picker, setPicker] = useState(false), [saved, setSaved] = useState(''), [guidance, setGuidance] = useState(false);
+  useEffect(() => { if (!recorder.record) setSelectedId(params.raceId); }, [params.raceId]);
+  const joined = (catalog.data ?? []).filter(ch => ch.joined && challengeTiming(ch).state === 'Live');
+  const challenge = joined.find(ch => ch.id === selectedId) ?? preferredChallenge(joined);
+  const supported = sport === 'Run' || sport === 'Walk' || sport === 'Ride';
+  const record = recorder.record, finished = record?.status === 'finished';
+  async function save(note: string) { const result = await recorder.save(note); if (result) setSaved(result.created ? 'Your activity is submitted for review.' : `This activity was already submitted · ${result.status}`); }
+  return <Page><Header title={finished?'Your effort has a home.':record?`${record.sport} your own way.`:'Make your next move.'} eyebrow={finished?'Activity complete · Review':record?'Your adventure in progress':'Your next adventure starts here.'} action={<BackAction onPress={() => router.canGoBack() ? router.back() : router.replace('/(app)/home')} />} />
+    {!!saved && <View style={[s.card,{padding:20,gap:12,marginBottom:20,backgroundColor:c.pale}]}><Text accessibilityLiveRegion="polite" style={s.section}>{saved}</Text><Text style={s.muted}>Points appear after approval. Follow the review or browse your activity history.</Text><Button title="View submissions" onPress={()=>router.push('/(app)/submit-activity')}/><Button secondary title="Your activity history" icon="activity" onPress={()=>router.push('/(app)/log')}/></View>}
+    {recorder.loading ? <Empty loading text="Recovering your recording"/> : record ? <RecordingSession key={record.id} record={record} now={recorder.now} busy={recorder.busy} error={recorder.error} challenge={challenge} onPause={()=>void recorder.pause()} onResume={()=>void recorder.resume()} onFinish={()=>void recorder.finish()} onSave={note=>void save(note)} onDiscard={()=>void recorder.discard()}/> : <>
+      <Text style={[s.muted,{marginTop:-10,marginBottom:18}]}>Choose your activity, then hit record.</Text>
+      <RecorderPreviewMap indoor={sport==='WeightTraining'}/>
+      <View style={{flexDirection:'row',gap:8,marginBottom:14}}>
+        {([{id:'Run',icon:'↗',label:'Run'},{id:'Ride',icon:'◎',label:'Ride'},{id:'Swim',icon:'≈',label:'Swim'},{id:'WeightTraining',icon:'ϟ',label:'Strength'}] as const).map(item=>{
+          const selected=sport===item.id||(item.id==='Run'&&sport==='Walk');
+          return <TouchableOpacity key={item.id} accessibilityRole="button" accessibilityLabel={item.label} accessibilityState={{selected}} aria-pressed={selected} onPress={()=>setSport(item.id)} style={{flex:1,minHeight:76,paddingVertical:12,alignItems:'center',justifyContent:'center',gap:5,borderRadius:15,borderWidth:1,borderColor:selected?c.green:c.border,backgroundColor:selected?c.pale:c.surface}}><Text style={{fontSize:25,color:c.green}}>{item.icon}</Text><Text style={{fontSize:11,fontWeight:'700',color:c.text}}>{item.label}</Text></TouchableOpacity>;
+        })}
+      </View>
+      {(sport==='Run'||sport==='Walk')&&<TouchableOpacity accessibilityRole="button" accessibilityLabel={sport==='Walk'?'Switch to run':'Record a walk instead'} onPress={()=>setSport(sport==='Walk'?'Run':'Walk')} style={{alignSelf:'flex-start',minHeight:34,justifyContent:'center',marginTop:-6,marginBottom:8}}><Text style={{fontSize:11,color:c.green}}>{sport==='Walk'?'Walking selected · Switch to run ↗':'Taking it slower? Record a walk ↗'}</Text></TouchableOpacity>}
+      <Text style={[s.section,{fontSize:12,marginBottom:8}]}>Preview your challenge points</Text>
+      {catalog.loading&&!catalog.data?<Empty loading text="Loading your challenges"/>:catalog.error?<View style={[s.card,{padding:16}]}><Text accessibilityRole="alert" style={[s.muted,{color:c.orange}]}>{catalog.error}</Text><TouchableOpacity accessibilityRole="button" onPress={()=>catalog.refresh()} style={{paddingVertical:10}}><Text style={{color:c.green}}>Try again</Text></TouchableOpacity></View>:challenge?<>
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Choose challenge for points preview" onPress={()=>setPicker(true)} style={[s.card,s.between,{padding:15,marginBottom:10,borderRadius:12}]}><Text style={[s.section,{fontSize:13,flex:1}]}>{challenge.name}</Text><Text style={{color:c.green}}>⌄</Text></TouchableOpacity>
+        <View style={[s.card,{padding:16,marginBottom:16}]}><Text style={[s.section,{fontSize:13}]}>{scoringSummary(challenge.config)}</Text><Text style={[s.muted,{fontSize:10,marginTop:5}]}>{challenge.sport_types.includes(sport)?'Approved workouts count toward all eligible joined challenges.':'This sport is not eligible for points in this challenge.'}</Text></View>
+      </>:<View style={[s.card,{padding:16,marginBottom:16}]}><Text style={[s.section,{fontSize:13}]}>Your workout still matters.</Text><Text style={[s.muted,{fontSize:11,marginTop:4}]}>Join a live challenge to turn your effort into points.</Text><TouchableOpacity accessibilityRole="button" onPress={()=>router.push('/(app)/challenges')} style={{paddingTop:10,paddingBottom:4}}><Text style={{fontSize:12,fontWeight:'700',color:c.orange}}>Find your next adventure ↗</Text></TouchableOpacity></View>}
+      <Button title={recorder.busy?'Starting GPS…':`● Start ${sportLabel(sport).toLowerCase()}`} disabled={recorder.busy} onPress={()=>{
+        if(Platform.OS==='web'||!supported){setGuidance(true);return;}
+        setSaved('');void recorder.start(sport as RecordingSport);
+      }}/>
+      <Text style={[s.muted,{fontSize:10,marginTop:12}]}>{Platform.OS==='web'?'Record GPS workouts with the Sage mobile app. On web, import a FIT workout or share a Strava activity.':supported?'Start outdoors. Precise location captures your route, distance and pace. Background location keeps recording with the screen locked.':'Bring this session from your watch or phone health service, or import the original FIT file.'}</Text>
+      {!!recorder.error&&<View style={{marginTop:16}}><Text accessibilityRole="alert" style={{color:c.orange,fontSize:12}}>{recorder.error}</Text>{Platform.OS!=='web'&&<TouchableOpacity accessibilityRole="button" onPress={()=>void Linking.openSettings()} style={{paddingVertical:14}}><Text style={{color:c.green}}>Open phone settings</Text></TouchableOpacity>}</View>}
+    </>}
+    {guidance&&<Sheet title={Platform.OS==='web'?'Record with the Sage mobile app':sport==='Swim'?'Bring your swim with you.':'Keep your strength in the story.'} onClose={()=>setGuidance(false)}><Text style={[s.muted,{marginBottom:18}]}>{Platform.OS==='web'?'Start, pause and finish outdoor runs, walks and rides in the installed Sage app on iPhone or Android. You can add an existing workout here.':'Phone GPS records outdoor runs, walks and rides. Add this workout from your health service or its original FIT file.'}</Text><Button title="Add an existing workout" onPress={()=>{setGuidance(false);router.push('/(app)/submit-activity');}}/><View style={{marginTop:10}}><Button secondary title="Connect your workouts" icon="heart" onPress={()=>{setGuidance(false);router.push('/(app)/health-connect');}}/></View></Sheet>}
+    {picker&&<Sheet title="Preview challenge points" onClose={()=>setPicker(false)}>{joined.map(ch=><TouchableOpacity accessibilityRole="button" key={ch.id} onPress={()=>{setSelectedId(ch.id);setPicker(false);}} style={{paddingVertical:18,borderBottomWidth:1,borderBottomColor:c.border}}><Text style={s.section}>{ch.name}{ch.id===challenge?.id?' ✓':''}</Text><Text style={s.muted}>{scoringSummary(ch.config)}</Text></TouchableOpacity>)}</Sheet>}
+  </Page>;
 }

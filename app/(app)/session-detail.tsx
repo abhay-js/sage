@@ -1,3 +1,4 @@
+import {sageColors as c} from '../../lib/theme';
 import { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Alert, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -51,7 +52,7 @@ export default function SessionDetailScreen() {
 
   if (loading || !session) {
     return (
-      <SafeAreaView className="flex-1 bg-sage-bg items-center justify-center">
+      <SafeAreaView edges={['top']} className="flex-1 bg-sage-bg items-center justify-center">
         <Text className="text-sage-muted">Loading…</Text>
       </SafeAreaView>
     );
@@ -214,7 +215,7 @@ export default function SessionDetailScreen() {
 
   // ── Render ───────────────────────────────────────────────────────────────
   return (
-    <SafeAreaView className="flex-1 bg-sage-bg">
+    <SafeAreaView edges={['top']} className="flex-1 bg-sage-bg">
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         {/* Nav */}
         <View className="px-5 pt-4 pb-2">
@@ -252,13 +253,13 @@ export default function SessionDetailScreen() {
             </View>
           )}
           {isArchived && (
-            <View className="mt-2 bg-[#73737322] border border-[#73737340] rounded-xl px-3 py-1.5 self-start">
+            <View className="mt-2 bg-sage-divider border border-sage-border rounded-xl px-3 py-1.5 self-start">
               <Text className="text-sage-muted text-xs font-bold">ARCHIVED</Text>
             </View>
           )}
           {isCompleted && (
-            <View className="mt-2 bg-[#60a5fa22] border border-[#60a5fa40] rounded-xl px-3 py-1.5 self-start">
-              <Text style={{ color: '#60a5fa', fontSize: 11, fontWeight: '800' }}>✓ COMPLETED</Text>
+            <View className="mt-2 bg-sage-infoBg border border-sage-infoBg rounded-xl px-3 py-1.5 self-start">
+              <Text style={{ color: c.info, fontSize: 11, fontWeight: '800' }}>✓ COMPLETED</Text>
             </View>
           )}
         </View>
@@ -274,7 +275,7 @@ export default function SessionDetailScreen() {
             <InfoRow
               icon="👥" label="Spots"
               value={`${enrolledCount} / ${session.max_participants} filled`}
-              valueColor={isFull ? '#f87171' : '#4ade80'}
+              valueColor={isFull ? c.danger : c.green}
             />
           </View>
 
@@ -317,9 +318,9 @@ export default function SessionDetailScreen() {
               )}
               {/* Host always sees WhatsApp here; athletes see it in the enrolled block below */}
               {session.whatsapp_link && isHost && (
-                <TouchableOpacity onPress={() => Linking.openURL(session.whatsapp_link!)} activeOpacity={0.8} className="rounded-2xl py-3.5 items-center flex-row justify-center gap-2" style={{ backgroundColor: '#25D36615', borderWidth: 1, borderColor: '#25D36630' }}>
+                <TouchableOpacity onPress={() => Linking.openURL(session.whatsapp_link!)} activeOpacity={0.8} className="rounded-2xl py-3.5 items-center flex-row justify-center gap-2" style={{ backgroundColor: c.pale, borderWidth: 1, borderColor: c.border }}>
                   <Text style={{ fontSize: 18 }}>💬</Text>
-                  <Text style={{ color: '#25D366', fontWeight: '800', fontSize: 14 }}>WhatsApp Group</Text>
+                  <Text style={{ color: c.green, fontWeight: '800', fontSize: 14 }}>WhatsApp Group</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -361,8 +362,8 @@ export default function SessionDetailScreen() {
                       <Text className="text-sage-muted text-sm">No pending requests.</Text>
                     ) : (
                       pending.map((req) => (
-                        <View key={req.id} className="flex-row items-center gap-3 py-3 border-b border-[#141414]">
-                          <AvatarBtn name={req.user?.name} color="#f59e0b" onPress={() => setProfileUserId(req.user_id)} />
+                        <View key={req.id} className="flex-row items-center gap-3 py-3 border-b border-sage-divider">
+                          <AvatarBtn name={req.user?.name} color={c.warning} onPress={() => setProfileUserId(req.user_id)} />
                           <TouchableOpacity onPress={() => setProfileUserId(req.user_id)} activeOpacity={0.7} className="flex-1">
                             <Text className="text-sage-text font-semibold text-sm" numberOfLines={1}>{req.user?.name ?? 'Athlete'}</Text>
                           </TouchableOpacity>
@@ -386,12 +387,12 @@ export default function SessionDetailScreen() {
                         Rejected · {rejected.length}
                       </Text>
                       {rejected.map((r) => (
-                        <View key={r.id} className="flex-row items-center gap-3 py-3 border-b border-[#141414]">
-                          <AvatarBtn name={r.user?.name} color="#737373" onPress={() => setProfileUserId(r.user_id)} />
+                        <View key={r.id} className="flex-row items-center gap-3 py-3 border-b border-sage-divider">
+                          <AvatarBtn name={r.user?.name} color={c.muted} onPress={() => setProfileUserId(r.user_id)} />
                           <TouchableOpacity onPress={() => setProfileUserId(r.user_id)} activeOpacity={0.7} className="flex-1">
                             <Text className="text-sage-muted font-semibold text-sm" numberOfLines={1}>{r.user?.name ?? 'Athlete'}</Text>
                           </TouchableOpacity>
-                          <TouchableOpacity onPress={() => undoRejection(r)} disabled={busy} activeOpacity={0.7} className="bg-sage-surface border border-[#2a2a2a] px-3 py-1.5 rounded-full">
+                          <TouchableOpacity onPress={() => undoRejection(r)} disabled={busy} activeOpacity={0.7} className="bg-sage-surface border border-sage-border px-3 py-1.5 rounded-full">
                             <Text className="text-sage-muted text-xs font-bold">Undo</Text>
                           </TouchableOpacity>
                         </View>
@@ -411,9 +412,9 @@ export default function SessionDetailScreen() {
                       const att = enr.status === 'attended';
                       const ns = enr.status === 'no_show';
                       return (
-                        <View key={enr.id} className="py-3 border-b border-[#141414]">
+                        <View key={enr.id} className="py-3 border-b border-sage-divider">
                           <View className="flex-row items-center gap-3 mb-2">
-                            <AvatarBtn name={enr.user?.name} color="#4ade80" onPress={() => setProfileUserId(enr.user_id)} />
+                            <AvatarBtn name={enr.user?.name} color={c.green} onPress={() => setProfileUserId(enr.user_id)} />
                             <TouchableOpacity onPress={() => setProfileUserId(enr.user_id)} activeOpacity={0.7} className="flex-1">
                               <Text className="text-sage-text font-semibold text-sm" numberOfLines={1}>{enr.user?.name ?? 'Athlete'}</Text>
                             </TouchableOpacity>
@@ -430,7 +431,7 @@ export default function SessionDetailScreen() {
                             <TouchableOpacity
                               onPress={() => att ? markAttendance(enr, 'enrolled') : markAttendance(enr, 'attended')}
                               disabled={busy} activeOpacity={0.7}
-                              className={`flex-1 py-1.5 rounded-xl items-center ${att ? 'bg-sage-green/20 border border-sage-green/30' : 'bg-[#0a0a0a]'}`}
+                              className={`flex-1 py-1.5 rounded-xl items-center ${att ? 'bg-sage-green/20 border border-sage-green/30' : 'bg-sage-divider'}`}
                             >
                               <Text className={`text-xs font-bold ${att ? 'text-sage-green' : 'text-sage-muted'}`}>
                                 {att ? 'Undo' : '✓ Attended'}
@@ -439,7 +440,7 @@ export default function SessionDetailScreen() {
                             <TouchableOpacity
                               onPress={() => ns ? markAttendance(enr, 'enrolled') : markAttendance(enr, 'no_show')}
                               disabled={busy} activeOpacity={0.7}
-                              className={`flex-1 py-1.5 rounded-xl items-center ${ns ? 'bg-red-500/20 border border-red-500/30' : 'bg-[#0a0a0a]'}`}
+                              className={`flex-1 py-1.5 rounded-xl items-center ${ns ? 'bg-red-500/20 border border-red-500/30' : 'bg-sage-divider'}`}
                             >
                               <Text className={`text-xs font-bold ${ns ? 'text-red-400' : 'text-sage-muted'}`}>
                                 {ns ? 'Undo' : '✗ No-show'}
@@ -458,8 +459,8 @@ export default function SessionDetailScreen() {
               {hostTab === 'settings' && (
                 <View className="bg-sage-surface rounded-2xl p-4 gap-3">
                   {isCompleted ? (
-                    <View className="rounded-xl py-4 items-center" style={{ backgroundColor: '#60a5fa15', borderWidth: 1, borderColor: '#60a5fa30' }}>
-                      <Text style={{ color: '#60a5fa', fontWeight: '800', fontSize: 14 }}>✓ Session Completed</Text>
+                    <View className="rounded-xl py-4 items-center" style={{ backgroundColor: c.infoBg, borderWidth: 1, borderColor: c.infoBg }}>
+                      <Text style={{ color: c.info, fontWeight: '800', fontSize: 14 }}>✓ Session Completed</Text>
                       <Text className="text-sage-muted text-xs mt-1">Attendance records are final.</Text>
                     </View>
                   ) : isCancelled ? (
@@ -473,11 +474,11 @@ export default function SessionDetailScreen() {
                     </TouchableOpacity>
                   ) : (
                     <>
-                      <TouchableOpacity onPress={completeSession} disabled={busy} activeOpacity={0.8} className="rounded-xl py-3.5 items-center" style={{ backgroundColor: '#60a5fa15', borderWidth: 1, borderColor: '#60a5fa30' }}>
-                        <Text style={{ color: '#60a5fa', fontWeight: '700', fontSize: 14 }}>✓ Mark as Completed</Text>
+                      <TouchableOpacity onPress={completeSession} disabled={busy} activeOpacity={0.8} className="rounded-xl py-3.5 items-center" style={{ backgroundColor: c.infoBg, borderWidth: 1, borderColor: c.infoBg }}>
+                        <Text style={{ color: c.info, fontWeight: '700', fontSize: 14 }}>✓ Mark as Completed</Text>
                         <Text className="text-sage-muted text-xs mt-0.5">Locks attendance — no more changes</Text>
                       </TouchableOpacity>
-                      <TouchableOpacity onPress={archiveSession} disabled={busy} activeOpacity={0.8} className="bg-[#73737318] border border-[#73737330] rounded-xl py-3.5 items-center">
+                      <TouchableOpacity onPress={archiveSession} disabled={busy} activeOpacity={0.8} className="bg-sage-divider border border-sage-border rounded-xl py-3.5 items-center">
                         <Text className="text-sage-muted font-bold text-sm">Archive Session</Text>
                       </TouchableOpacity>
                       <TouchableOpacity onPress={cancelSession} activeOpacity={0.7} className="bg-red-500/10 border border-red-500/20 rounded-xl py-3.5 items-center">
@@ -518,7 +519,7 @@ export default function SessionDetailScreen() {
                   <Text className="text-sage-muted text-sm text-center">You were marked absent. Reach out to the host if this is incorrect.</Text>
                 </View>
               ) : isRejected ? (
-                <View className="bg-[#73737318] border border-[#73737330] rounded-2xl p-5 items-center gap-2">
+                <View className="bg-sage-divider border border-sage-border rounded-2xl p-5 items-center gap-2">
                   <Text style={{ fontSize: 36 }}>🚫</Text>
                   <Text className="text-sage-muted font-black text-base">Request Rejected</Text>
                   <Text className="text-sage-muted text-sm text-center">The host declined your request for this session.</Text>
@@ -546,10 +547,10 @@ export default function SessionDetailScreen() {
                       onPress={() => Linking.openURL(session.whatsapp_link!)}
                       activeOpacity={0.85}
                       className="rounded-2xl py-4 items-center flex-row justify-center gap-2"
-                      style={{ backgroundColor: '#25D36620', borderWidth: 1.5, borderColor: '#25D36650' }}
+                      style={{ backgroundColor: c.pale, borderWidth: 1.5, borderColor: c.border }}
                     >
                       <Text style={{ fontSize: 22 }}>💬</Text>
-                      <Text style={{ color: '#25D366', fontWeight: '900', fontSize: 15, letterSpacing: 0.5 }}>
+                      <Text style={{ color: c.green, fontWeight: '900', fontSize: 15, letterSpacing: 0.5 }}>
                         Join WhatsApp Group
                       </Text>
                     </TouchableOpacity>
@@ -562,7 +563,7 @@ export default function SessionDetailScreen() {
                 <StatusCard color="red" title="Session Full" />
               ) : (
                 <TouchableOpacity onPress={requestJoin} disabled={busy} activeOpacity={0.85} className="bg-sage-green rounded-2xl py-4 items-center">
-                  <Text className="text-black font-black text-base tracking-widest">
+                  <Text className="text-sage-onAccent font-black text-base tracking-widest">
                     {busy ? 'REQUESTING…' : 'REQUEST TO JOIN →'}
                   </Text>
                 </TouchableOpacity>
@@ -587,14 +588,14 @@ function HostTabBtn({
   return (
     <TouchableOpacity
       onPress={onPress} activeOpacity={0.8} className="flex-1 items-center py-2 rounded-xl flex-row justify-center gap-1.5"
-      style={{ backgroundColor: active ? '#0a0a0a' : 'transparent' }}
+      style={{ backgroundColor: active ? c.bg : 'transparent' }}
     >
-      <Text style={{ color: active ? '#f5f5f5' : '#737373', fontWeight: '700', fontSize: 12 }}>
+      <Text style={{ color: active ? c.text : c.muted, fontWeight: '700', fontSize: 12 }}>
         {label}
       </Text>
       {badge != null && (
-        <View style={{ backgroundColor: active ? '#4ade80' : '#525252', borderRadius: 10, minWidth: 18, paddingHorizontal: 5, height: 18, alignItems: 'center', justifyContent: 'center' }}>
-          <Text style={{ color: active ? '#000' : '#f5f5f5', fontSize: 10, fontWeight: '900' }}>{badge}</Text>
+        <View style={{ backgroundColor: active ? c.green : c.muted, borderRadius: 10, minWidth: 18, paddingHorizontal: 5, height: 18, alignItems: 'center', justifyContent: 'center' }}>
+          <Text style={{ color: active ? c.onAccent : c.text, fontSize: 10, fontWeight: '900' }}>{badge}</Text>
         </View>
       )}
     </TouchableOpacity>
@@ -613,7 +614,7 @@ function AvatarBtn({ name, color, onPress }: { name?: string; color: string; onP
 }
 
 function StatusCard({ color, title }: { color: 'red' | 'gray'; title: string }) {
-  const bg = color === 'red' ? 'bg-red-500/10' : 'bg-[#73737318]';
+  const bg = color === 'red' ? 'bg-red-500/10' : 'bg-sage-divider';
   const text = color === 'red' ? 'text-red-400' : 'text-sage-muted';
   return (
     <View className={`${bg} rounded-2xl py-4 items-center`}>
@@ -626,12 +627,12 @@ function InfoRow({ icon, label, value, valueColor }: {
   icon: string; label: string; value: string; valueColor?: string;
 }) {
   return (
-    <View className="flex-row items-center justify-between py-2.5 border-b border-[#141414]">
+    <View className="flex-row items-center justify-between py-2.5 border-b border-sage-divider">
       <View className="flex-row items-center gap-2">
         <Text style={{ fontSize: 14 }}>{icon}</Text>
         <Text className="text-sage-muted text-sm">{label}</Text>
       </View>
-      <Text className="font-semibold text-sm" style={{ color: valueColor ?? '#e5e5e5' }}>{value}</Text>
+      <Text className="font-semibold text-sm" style={{ color: valueColor ?? c.text }}>{value}</Text>
     </View>
   );
 }

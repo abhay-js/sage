@@ -3,11 +3,11 @@ import { Text, View, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
 import { useActivities } from '../../hooks/useActivities';
-import { Page, Section, Button, s } from '../../components/ui/SageUI';
+import { Page, Section, Button, s } from '../../components/ui/AdventureUI';
 import { ProfileHeader } from '../../components/ui/ProfileHeader';
 import { Skeleton } from '../../components/ui/ProductUI';
 import { SageIcon, SageIconName } from '../../components/ui/SageIcon';
-import { sageColors as c } from '../../lib/theme';
+import { adventureColors as c } from '../../lib/theme';
 
 export default function TrainingDetails() {
   const router = useRouter();
@@ -46,7 +46,7 @@ export default function TrainingDetails() {
         {peakRates.length > 0 && <Detail label="Highest recorded heart rate" value={`${Math.round(Math.max(...peakRates.map(activity => activity.max_heartrate!)))} bpm`} />}
         {heartRates.length > 0 && <Text style={[s.muted, { fontSize: 10, marginTop: 12 }]}>Mean heart rate averages the recorded workout averages. Missing measurements are excluded.</Text>}
       </View></>}
-      <TouchableOpacity accessibilityRole="button" onPress={() => router.push('/(app)/log')} style={styles.activityLink}><View><Text style={s.section}>Explore your activities</Text><Text style={s.muted}>Workouts, charts and scoring details</Text></View><SageIcon name="arrow" /></TouchableOpacity>
+      <TouchableOpacity accessibilityRole="button" onPress={() => router.push('/(app)/log')} style={styles.activityLink}><View><Text style={s.section}>Explore your activities</Text><Text style={s.muted}>Your workouts, routes and training charts</Text></View><SageIcon name="arrow" /></TouchableOpacity>
     </>}
   </Page>;
 }

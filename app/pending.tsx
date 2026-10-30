@@ -1,3 +1,4 @@
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import { useState } from 'react';
 import { View, Text, TouchableOpacity, Alert, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -13,6 +14,7 @@ const SPORT_TYPES = [
 ];
 
 export default function PendingScreen() {
+  const insets=useSafeAreaInsets();
   const { user, signOut, refreshProfile } = useAuth();
   const router = useRouter();
   const [selected, setSelected] = useState<string>(user?.sport_type ?? '');
@@ -39,11 +41,11 @@ export default function PendingScreen() {
   return (
     <ScrollView
       className="flex-1 bg-sage-bg"
-      contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 64, paddingBottom: 48 }}
+      contentContainerStyle={{ paddingHorizontal: 20, paddingTop: insets.top+16, paddingBottom: insets.bottom+16 }}
       showsVerticalScrollIndicator={false}
     >
       {/* Header */}
-      <View className="items-center mb-10">
+      <View className="items-center mb-6">
         <Text className="text-sage-green font-black text-5xl tracking-tight mb-1">SAGE</Text>
         <Text className="text-sage-text font-black text-2xl mt-3">
           Hi, {user?.name?.split(' ')[0]}!
@@ -80,7 +82,7 @@ export default function PendingScreen() {
             </View>
             {isSelected && (
               <View className="w-5 h-5 rounded-full bg-sage-green items-center justify-center">
-                <Text className="text-black text-xs font-black">✓</Text>
+                <Text className="text-sage-onAccent text-xs font-black">✓</Text>
               </View>
             )}
           </TouchableOpacity>
@@ -94,7 +96,7 @@ export default function PendingScreen() {
           activeOpacity={0.85}
           className="bg-sage-green rounded-2xl py-3.5 items-center mt-1 mb-6"
         >
-          <Text className="text-black font-black tracking-widest">
+          <Text className="text-sage-onAccent font-black tracking-widest">
             {saving ? 'SAVING…' : 'SAVE'}
           </Text>
         </TouchableOpacity>

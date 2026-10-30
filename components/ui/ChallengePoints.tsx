@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Text, View, TouchableOpacity } from 'react-native';
+import { Text, View, TouchableOpacity, TextInput } from 'react-native';
 import { ChallengeConfiguration } from '../../types/product';
-import { sageColors as c } from '../../lib/theme';
-import { Section, s } from './SageUI';
+import { adventureColors as c } from '../../lib/theme';
+import { Chips, Section, s } from './AdventureUI';
+import { thresholdPoints } from '../../lib/thresholdScoring';
 import { SageIcon, SageIconName } from './SageIcon';
 
 const sportDetails: Record<string, { label: string; icon: SageIconName }> = {
@@ -40,6 +41,23 @@ export function ChallengePoints({ config, expanded = false }: { config: Challeng
     </>}
     <Text style={[s.muted, { fontSize: 11, marginTop: 12 }]}>Points are awarded once a verified workout is approved.{config.scoringMode === 'THRESHOLD' ? ' The highest qualifying row applies per workout; rows do not stack.' : ''}{config.maxWorkoutsPerDay ? ` Maximum ${config.maxWorkoutsPerDay} qualifying workouts per day.` : ''}</Text>
   </>;
+}
+
+export function PointsEstimate({ config }: { config: ChallengeConfiguration }) {
+  const sports = [...new Set(config.scoringRules.map(rule => rule.sport))];
+  const [sport, setSport] = useState(sports[0]??'Run'), [distance, setDistance] = useState('5'), [minutes, setMinutes] = useState('30');
+  const rules = config.scoringRules.filter(rule => rule.sport === sport);
+  const needsDistance = rules.some(rule => rule.unit === 'KM' || rule.unit === 'METERS');
+  const needsTime = config.scoringMode === 'LEGACY' || rules.some(rule => rule.unit === 'MINUTES');
+  const valid = (!needsDistance || distance.trim() !== '' && Number.isFinite(Number(distance)) && Number(distance) > 0) && (!needsTime || minutes.trim() !== '' && Number.isFinite(Number(minutes)) && Number(minutes) > 0);
+  const points = valid ? config.scoringMode === 'LEGACY' ? config.legacy.sessionPoints + Math.floor(Number(minutes) / 60 * config.legacy.hourPoints) : thresholdPoints(config, sport, Number(distance) * 1000, Number(minutes) * 60) : 0;
+  return <View style={[s.card, { marginTop: 20, padding: 18 }]}>
+    <Text style={s.eyebrow}>YOUR NEXT MOVE</Text><Text style={[s.section, { marginBottom: 14 }]}>What could your workout earn?</Text>
+    {sports.length>0&&<Chips options={sports.map(id => ({ id, label: sportDetails[id]?.label ?? id }))} value={sport} onChange={setSport} />}
+    <View style={[s.row, { gap: 12 }]}>{[{ label: 'Distance · km', value: distance, set: setDistance, visible: needsDistance }, { label: 'Active time · min', value: minutes, set: setMinutes, visible: needsTime }].filter(field => field.visible).map(field => <View key={field.label} style={{ flex: 1 }}><Text style={[s.label, { marginBottom: 8 }]}>{field.label}</Text><TextInput accessibilityLabel={field.label} keyboardType="decimal-pad" value={field.value} onChangeText={field.set} maxLength={8} style={{ borderWidth: 1, borderColor: c.border, borderRadius: 12, padding: 12, color: c.text, backgroundColor: c.bg, fontSize: 18 }} /></View>)}</View>
+    <View accessibilityLiveRegion="polite" style={{ backgroundColor: c.pale, padding: 18, borderRadius: 14, marginTop: 16 }}><Text style={s.eyebrow}>ESTIMATED BASE POINTS</Text><Text style={{ color: c.green, fontSize: 34, fontWeight: '800' }}>{valid ? `+${points}` : '—'}<Text style={{ fontSize: 12 }}> pts</Text></Text><Text style={[s.muted, { fontSize: 10, marginTop: 5 }]}>{valid ? config.scoringMode==='LEGACY'?'Session + active-time points. Cumulative rounding may change the final total.':'Highest completed workout tier. Bonuses and limits apply after verification.' : 'Enter a positive amount to see your estimate.'}</Text></View>
+    <Text style={[s.muted, { fontSize: 10, marginTop: 12 }]}>An estimate only. Your athlete level, daily limits and approval can affect the final score.</Text>
+  </View>;
 }
 
 export function ChallengeBonuses({ config }: { config: ChallengeConfiguration }) {

@@ -1,3 +1,4 @@
+import {sageColors as c} from '../lib/theme';
 import { useState } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Entry, User } from '../types';
@@ -37,7 +38,7 @@ export function LeaderboardRow({ rank, user, entry, isMe, sortKey = 'sage_score'
         onPress={() => setSheetUserId(user.id)}
         activeOpacity={0.75}
         className={`flex-row items-center px-5 py-3.5 ${
-          isMe ? 'bg-sage-green/10 mx-4 rounded-2xl mb-1' : 'border-b border-[#141414]'
+          isMe ? 'bg-sage-green/10 mx-4 rounded-2xl mb-1' : 'border-b border-sage-divider'
         }`}
       >
         {/* Rank / medal */}

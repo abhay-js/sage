@@ -1,3 +1,4 @@
+import {sageColors as c} from '../lib/theme';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { GroupSession } from '../types';
 
@@ -44,29 +45,29 @@ export function SessionCard({
     : null;
 
   // Border color: purple for hosted, green for enrolled, none otherwise
-  const borderColor = isHosted ? '#7c3aed' : isEnrolled ? '#4ade80' : undefined;
+  const borderColor = isHosted ? c.purple : isEnrolled ? c.green : undefined;
 
   // Badge
   let badgeText = `${spotsLeft} left`;
-  let badgeBg = '#0a0a0a';
-  let badgeText2 = '#737373';
+  let badgeBg = c.bg;
+  let badgeText2 = c.muted;
 
   if (isHosted && statusLabel) {
     badgeText = statusLabel.toUpperCase();
-    badgeBg = (statusColor ?? '#737373') + '22';
-    badgeText2 = statusColor ?? '#737373';
+    badgeBg = (statusColor ?? c.muted) + '22';
+    badgeText2 = statusColor ?? c.muted;
   } else if (isEnrolled) {
     badgeText = 'JOINED';
-    badgeBg = '#4ade8022';
-    badgeText2 = '#4ade80';
+    badgeBg = c.pale;
+    badgeText2 = c.green;
   } else if (isPending) {
     badgeText = 'PENDING ⏳';
-    badgeBg = '#f59e0b22';
-    badgeText2 = '#f59e0b';
+    badgeBg = c.warningBg;
+    badgeText2 = c.warning;
   } else if (isFull) {
     badgeText = 'FULL';
-    badgeBg = '#f8717122';
-    badgeText2 = '#f87171';
+    badgeBg = c.peach;
+    badgeText2 = c.danger;
   }
 
   return (
@@ -74,7 +75,7 @@ export function SessionCard({
       onPress={onPress}
       activeOpacity={0.85}
       style={[
-        { borderRadius: 20, padding: 16, marginBottom: 12, backgroundColor: '#1a1a1a' },
+        { borderRadius: 20, padding: 16, marginBottom: 12, backgroundColor: c.surface },
         borderColor ? { borderLeftWidth: 3, borderLeftColor: borderColor } : undefined,
         isArchived ? { opacity: 0.6 } : undefined,
       ]}
@@ -85,13 +86,13 @@ export function SessionCard({
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 2 }}>
             <Text style={{ fontSize: 15 }}>{SPORT_ICONS[session.sport_type] ?? '🏅'}</Text>
             <Text
-              style={{ color: '#f5f5f5', fontWeight: '900', fontSize: 15, flex: 1 }}
+              style={{ color: c.text, fontWeight: '900', fontSize: 15, flex: 1 }}
               numberOfLines={1}
             >
               {session.title}
             </Text>
           </View>
-          <Text style={{ color: '#737373', fontSize: 12 }}>
+          <Text style={{ color: c.muted, fontSize: 12 }}>
             {isHosted ? "⚡ You're hosting" : `by ${session.host?.name ?? 'Sage'}`}
           </Text>
         </View>
@@ -107,9 +108,9 @@ export function SessionCard({
         {session.distance_km != null && <InfoPill icon="🛣️" text={`${session.distance_km} km`} />}
         {session.duration_mins != null && <InfoPill icon="⏱" text={`${session.duration_mins} min`} />}
         {distanceKm != null && (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#3b82f620', borderRadius: 20, paddingHorizontal: 8, paddingVertical: 2 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: c.infoBg, borderRadius: 20, paddingHorizontal: 8, paddingVertical: 2 }}>
             <Text style={{ fontSize: 11 }}>📍</Text>
-            <Text style={{ color: '#60a5fa', fontSize: 12, fontWeight: '700' }}>
+            <Text style={{ color: c.info, fontSize: 12, fontWeight: '700' }}>
               {distanceKm < 1 ? `${Math.round(distanceKm * 1000)}m` : `${distanceKm.toFixed(1)} km`} away
             </Text>
           </View>
@@ -128,7 +129,7 @@ export function SessionCard({
       ) : null}
 
       {session.meeting_point ? (
-        <Text style={{ color: '#737373', fontSize: 11, marginTop: 8 }} numberOfLines={1}>
+        <Text style={{ color: c.muted, fontSize: 11, marginTop: 8 }} numberOfLines={1}>
           📍 {session.meeting_point}
         </Text>
       ) : null}
@@ -140,15 +141,15 @@ function InfoPill({ icon, text }: { icon: string; text: string }) {
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
       <Text style={{ fontSize: 11 }}>{icon}</Text>
-      <Text style={{ color: '#737373', fontSize: 12 }}>{text}</Text>
+      <Text style={{ color: c.muted, fontSize: 12 }}>{text}</Text>
     </View>
   );
 }
 
 function Badge({ text }: { text: string }) {
   return (
-    <View style={{ backgroundColor: '#0a0a0a', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 }}>
-      <Text style={{ color: '#737373', fontSize: 11, fontWeight: '600', textTransform: 'capitalize' }}>
+    <View style={{ backgroundColor: c.bg, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 }}>
+      <Text style={{ color: c.muted, fontSize: 11, fontWeight: '600', textTransform: 'capitalize' }}>
         {text}
       </Text>
     </View>

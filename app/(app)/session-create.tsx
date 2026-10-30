@@ -1,3 +1,4 @@
+import {sageColors as c} from '../../lib/theme';
 import { useState, ReactNode } from 'react';
 import {
   View, Text, ScrollView, TextInput, TouchableOpacity, Alert, KeyboardAvoidingView, Platform,
@@ -109,7 +110,7 @@ export default function SessionCreateScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-sage-bg">
+    <SafeAreaView edges={['top']} className="flex-1 bg-sage-bg">
       <KeyboardAvoidingView
         className="flex-1"
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -138,7 +139,7 @@ export default function SessionCreateScreen() {
                     <Text style={{ fontSize: 18 }}>{SPORT_ICONS[s]}</Text>
                     <Text
                       className={`text-xs font-bold mt-1 ${
-                        sport === s ? 'text-black' : 'text-sage-muted'
+                        sport === s ? 'text-sage-onAccent' : 'text-sage-muted'
                       }`}
                     >
                       {s}
@@ -245,7 +246,7 @@ export default function SessionCreateScreen() {
                         className={`px-3 py-1.5 rounded-full border ${
                           rideType === rt
                             ? 'border-sage-green bg-sage-green/10'
-                            : 'border-[#2a2a2a] bg-sage-surface'
+                            : 'border-sage-border bg-sage-surface'
                         }`}
                       >
                         <Text
@@ -292,7 +293,7 @@ export default function SessionCreateScreen() {
                         className={`px-3 py-1.5 rounded-full border ${
                           workoutType === wt
                             ? 'border-sage-green bg-sage-green/10'
-                            : 'border-[#2a2a2a] bg-sage-surface'
+                            : 'border-sage-border bg-sage-surface'
                         }`}
                       >
                         <Text
@@ -370,9 +371,9 @@ export default function SessionCreateScreen() {
               onPress={submit}
               disabled={loading}
               activeOpacity={0.85}
-              className="bg-sage-green rounded-2xl py-4 items-center mt-2 mb-10"
+              className="bg-sage-green rounded-2xl py-4 items-center mt-2 mb-4"
             >
-              <Text className="text-black font-black text-base tracking-widest">
+              <Text className="text-sage-onAccent font-black text-base tracking-widest">
                 {loading ? 'CREATING…' : 'CREATE SESSION →'}
               </Text>
             </TouchableOpacity>
@@ -398,7 +399,7 @@ function Input({ style, ...props }: TextInputProps & { style?: object }) {
   return (
     <TextInput
       className="bg-sage-surface rounded-xl px-4 py-3 text-sage-text text-sm"
-      placeholderTextColor="#525252"
+      placeholderTextColor={c.muted}
       style={style}
       {...props}
     />

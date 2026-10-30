@@ -1,3 +1,4 @@
+import {sageColors as c} from '../lib/theme';
 import { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator, Linking, Platform,
@@ -59,7 +60,7 @@ export function LocationPicker({ address, latitude, longitude, onChange, placeho
           value={address}
           onChangeText={(t) => onChange(t, latitude, longitude)}
           placeholder={placeholder ?? 'Meeting point / start location'}
-          placeholderTextColor="#525252"
+          placeholderTextColor={c.muted}
           className="flex-1 text-sage-text text-sm"
           multiline={false}
         />
@@ -74,7 +75,7 @@ export function LocationPicker({ address, latitude, longitude, onChange, placeho
           className="flex-1 bg-sage-green/15 border border-sage-green/30 rounded-xl py-2.5 flex-row items-center justify-center gap-2"
         >
           {locating ? (
-            <ActivityIndicator size="small" color="#4ade80" />
+            <ActivityIndicator size="small" color={c.green} />
           ) : (
             <Text style={{ fontSize: 14 }}>🎯</Text>
           )}
@@ -87,7 +88,7 @@ export function LocationPicker({ address, latitude, longitude, onChange, placeho
           <TouchableOpacity
             onPress={openInMaps}
             activeOpacity={0.8}
-            className="flex-1 bg-sage-surface border border-[#2a2a2a] rounded-xl py-2.5 flex-row items-center justify-center gap-2"
+            className="flex-1 bg-sage-surface border border-sage-border rounded-xl py-2.5 flex-row items-center justify-center gap-2"
           >
             <Text style={{ fontSize: 14 }}>🗺️</Text>
             <Text className="text-sage-muted font-bold text-xs">Preview map</Text>

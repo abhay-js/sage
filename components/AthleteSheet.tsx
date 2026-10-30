@@ -1,3 +1,4 @@
+import {sageColors as c} from '../lib/theme';
 import { useEffect, useState } from 'react';
 import {
   View, Text, Modal, Pressable, ScrollView, ActivityIndicator,
@@ -84,14 +85,14 @@ export function AthleteSheet({ userId, onClose }: Props) {
         {/* Sheet — no Pressable, scroll works freely */}
         <View style={{
           position: 'absolute', bottom: 0, left: 0, right: 0,
-          backgroundColor: '#111',
+          backgroundColor: c.surface,
           borderTopLeftRadius: 28,
           borderTopRightRadius: 28,
           maxHeight: '82%',
         }}>
           {/* Drag handle */}
           <View style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 8 }}>
-            <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: '#333' }} />
+            <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: c.border }} />
           </View>
 
           <ScrollView
@@ -102,7 +103,7 @@ export function AthleteSheet({ userId, onClose }: Props) {
           >
             {loading ? (
               <View style={{ alignItems: 'center', paddingVertical: 40 }}>
-                <ActivityIndicator color="#4ade80" />
+                <ActivityIndicator color={c.green} />
               </View>
             ) : stats ? (
               <>
@@ -110,22 +111,22 @@ export function AthleteSheet({ userId, onClose }: Props) {
                 <View style={{ alignItems: 'center', marginBottom: 24, marginTop: 8 }}>
                   <View style={{
                     width: 72, height: 72, borderRadius: 36,
-                    backgroundColor: '#4ade8022',
+                    backgroundColor: c.pale,
                     alignItems: 'center', justifyContent: 'center', marginBottom: 10,
                   }}>
-                    <Text style={{ color: '#4ade80', fontSize: 24, fontWeight: '900' }}>
+                    <Text style={{ color: c.green, fontSize: 24, fontWeight: '900' }}>
                       {initials}
                     </Text>
                   </View>
-                  <Text style={{ color: '#f5f5f5', fontWeight: '900', fontSize: 20 }}>
+                  <Text style={{ color: c.text, fontWeight: '900', fontSize: 20 }}>
                     {stats.name}
                   </Text>
                   {stats.status === 'active' && (
                     <View style={{
-                      backgroundColor: '#4ade8015', borderRadius: 20,
+                      backgroundColor: c.pale, borderRadius: 20,
                       paddingHorizontal: 12, paddingVertical: 4, marginTop: 6,
                     }}>
-                      <Text style={{ color: '#4ade80', fontSize: 11, fontWeight: '800' }}>
+                      <Text style={{ color: c.green, fontSize: 11, fontWeight: '800' }}>
                         ACTIVE MEMBER
                       </Text>
                     </View>
@@ -134,11 +135,11 @@ export function AthleteSheet({ userId, onClose }: Props) {
 
                 {/* Hero stats */}
                 <View style={{
-                  backgroundColor: '#1a1a1a', borderRadius: 20,
+                  backgroundColor: c.surface, borderRadius: 20,
                   padding: 16, marginBottom: 16,
                 }}>
                   <Text style={{
-                    color: '#737373', fontSize: 10, fontWeight: '800',
+                    color: c.muted, fontSize: 10, fontWeight: '800',
                     letterSpacing: 2, marginBottom: 14,
                   }}>
                     ALL-TIME STATS
@@ -152,13 +153,13 @@ export function AthleteSheet({ userId, onClose }: Props) {
                   {stats.topStreak > 0 && (
                     <View style={{
                       marginTop: 12, paddingTop: 12,
-                      borderTopWidth: 1, borderTopColor: '#222',
+                      borderTopWidth: 1, borderTopColor: c.divider,
                       flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
                     }}>
-                      <Text style={{ color: '#737373', fontSize: 10, fontWeight: '800', letterSpacing: 2 }}>
+                      <Text style={{ color: c.muted, fontSize: 10, fontWeight: '800', letterSpacing: 2 }}>
                         BEST STREAK
                       </Text>
-                      <Text style={{ color: '#f5f5f5', fontWeight: '900', fontSize: 18 }}>
+                      <Text style={{ color: c.text, fontWeight: '900', fontSize: 18 }}>
                         🔥 {stats.topStreak} days
                       </Text>
                     </View>
@@ -167,9 +168,9 @@ export function AthleteSheet({ userId, onClose }: Props) {
 
                 {/* Race history */}
                 {stats.races.length > 0 && (
-                  <View style={{ backgroundColor: '#1a1a1a', borderRadius: 20, padding: 16 }}>
+                  <View style={{ backgroundColor: c.surface, borderRadius: 20, padding: 16 }}>
                     <Text style={{
-                      color: '#737373', fontSize: 10, fontWeight: '800',
+                      color: c.muted, fontSize: 10, fontWeight: '800',
                       letterSpacing: 2, marginBottom: 12,
                     }}>
                       RACE HISTORY
@@ -179,21 +180,21 @@ export function AthleteSheet({ userId, onClose }: Props) {
                         flexDirection: 'row', justifyContent: 'space-between',
                         alignItems: 'center', paddingVertical: 10,
                         borderBottomWidth: i < stats.races.length - 1 ? 1 : 0,
-                        borderBottomColor: '#222',
+                        borderBottomColor: c.divider,
                       }}>
                         <View style={{ flex: 1, marginRight: 12 }}>
                           <Text
-                            style={{ color: '#f5f5f5', fontWeight: '700', fontSize: 13 }}
+                            style={{ color: c.text, fontWeight: '700', fontSize: 13 }}
                             numberOfLines={1}
                           >
                             {r.name}
                           </Text>
-                          <Text style={{ color: '#737373', fontSize: 11, marginTop: 2 }}>
+                          <Text style={{ color: c.muted, fontSize: 11, marginTop: 2 }}>
                             {r.sessions} sessions
                             {r.streak > 0 ? `  ·  🔥 ${r.streak}d` : ''}
                           </Text>
                         </View>
-                        <Text style={{ color: '#4ade80', fontWeight: '900', fontSize: 16 }}>
+                        <Text style={{ color: c.green, fontWeight: '900', fontSize: 16 }}>
                           {r.score.toLocaleString()}
                         </Text>
                       </View>
@@ -202,7 +203,7 @@ export function AthleteSheet({ userId, onClose }: Props) {
                 )}
               </>
             ) : (
-              <Text style={{ color: '#737373', textAlign: 'center', paddingVertical: 40 }}>
+              <Text style={{ color: c.muted, textAlign: 'center', paddingVertical: 40 }}>
                 Athlete not found.
               </Text>
             )}
@@ -216,10 +217,10 @@ export function AthleteSheet({ userId, onClose }: Props) {
 function StatPill({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
   return (
     <View style={{ alignItems: 'center' }}>
-      <Text style={{ color: accent ? '#4ade80' : '#f5f5f5', fontWeight: '900', fontSize: 22 }}>
+      <Text style={{ color: accent ? c.green : c.text, fontWeight: '900', fontSize: 22 }}>
         {value}
       </Text>
-      <Text style={{ color: '#737373', fontSize: 9, fontWeight: '800', letterSpacing: 1.5, marginTop: 2 }}>
+      <Text style={{ color: c.muted, fontSize: 9, fontWeight: '800', letterSpacing: 1.5, marginTop: 2 }}>
         {label}
       </Text>
     </View>

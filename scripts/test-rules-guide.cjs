@@ -1,0 +1,25 @@
+const fs=require('node:fs'),assert=require('node:assert/strict'),vm=require('node:vm'),ts=require('typescript');
+function load(file,deps={}){const box={exports:{},require:id=>deps[id],Date,Map,Set,Intl};vm.runInNewContext(ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText,box);return box.exports;}
+const product=load('lib/productConfig.ts'),threshold=load('lib/thresholdScoring.ts'),experience=load('lib/challengeExperience.ts',{'./productConfig':product});
+const guide=load('lib/rulesGuide.ts',{'./thresholdScoring':threshold,'./challengeExperience':experience});
+const row=(sport,unit,threshold,points)=>({id:`${sport}-${unit}-${threshold}`,sport,unit,threshold,points,order:0});
+const config={...product.emptyChallengeConfig(),scoringRules:[row('Run','KM',3,5),row('Run','KM',5,10),row('Run','KM',10,25),row('Run','METERS',5000,12),row('Run','MINUTES',60,30),row('Swim','METERS',750,8),row('WeightTraining','MINUTES',30,10),row('Ride','SESSION',1,6),row('Walk','KM',1,20)]};
+const challenge={config,sport_types:['Run','Swim','WeightTraining','Ride'],challenge_start:'2026-10-28T00:00:00Z',challenge_end:'2026-11-04T00:00:00Z'};
+assert.equal(guide.guideSports(challenge).join(','),'Run,Swim,WeightTraining,Ride');
+assert.equal(guide.guideMetrics(config,'Run').join(','),'distance,minutes');
+assert.equal(JSON.stringify(guide.guideTiers(config,'Run','distance')),JSON.stringify([{threshold:3,points:5},{threshold:5,points:12},{threshold:10,points:25}]));
+assert.equal(guide.guideAmount(.75,'distance'),'750 m');assert.equal(guide.guideAmount(10.25,'distance'),'10.25 km');assert.equal(guide.guideAmount(1,'session'),'1 session');
+assert.equal(guide.guideEstimate(config,'Run',2.99,0),0);assert.equal(guide.guideEstimate(config,'Run',3,0),5);assert.equal(guide.guideEstimate(config,'Run',9.8,0),12);assert.equal(guide.guideEstimate(config,'Run',10,0),25);
+assert.equal(guide.guideEstimate(config,'Run',10,60),30);assert.equal(guide.guideEstimate(config,'Swim',.749,0),0);assert.equal(guide.guideEstimate(config,'Swim',.75,0),8);
+assert.equal(guide.guideEstimate(config,'WeightTraining',0,29),0);assert.equal(guide.guideEstimate(config,'WeightTraining',0,30),10);assert.equal(guide.guideEstimate(config,'Ride',0,0),6);
+assert.equal(guide.guideEstimate({...config,scoringRules:[row('Run','KM',3,30),row('Run','KM',5,10)]},'Run',5,0),30);
+for(const value of [-1,NaN,Infinity])assert.equal(guide.guideEstimate(config,'Run',value,10),null);
+const legacy={...config,scoringMode:'LEGACY'};assert.equal(guide.guideEstimate(legacy,'Run',0,30),17);assert.equal(guide.guideMetrics(legacy,'Run').join(','),'minutes');
+assert.match(guide.guideBasics(challenge)[1].title,/first 2/);assert.match(guide.guideBasics(challenge)[1].text,/start-time order/);assert.match(guide.guideBasics({...challenge,config:{...config,maxWorkoutsPerDay:null}})[1].title,/Every/);
+assert.match(guide.guideFaqs(config)[2].a,/outside the daily cap does not earn/);assert.match(guide.guideFaqs(legacy)[0].a,/Cumulative rounding/);
+const mission=(type,metadata={},maxUses)=>({type,metadata,maxUses});
+assert.match(guide.guideBonus(mission('EARLY_BIRD',{hour:6},2),'Asia/Kolkata'),/06:00.*Asia\/Kolkata.*2 awards/);
+assert.match(guide.guideBonus(mission('STREAK',{days:4}),''),/4 consecutive counted days.*1 award/);
+assert.match(guide.guideBonus(mission('OUTDOOR'),''),/outdoor ride/);assert.match(guide.guideBonus(mission('ELEVATION',{elevation:500}),''),/500 m/);
+assert.match(guide.guideBonus(mission('BRICK',{gapMinutes:30}),''),/30 minutes/);assert.match(guide.guideBonus(mission('CUSTOM'),''),/reviewer assignment/);
+console.log('PASS: Rules guide matches configured distance/time/session thresholds, maximum matching points, legacy rounding, daily cap order and actual bonus conditions.');

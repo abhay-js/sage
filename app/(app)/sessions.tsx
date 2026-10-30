@@ -1,3 +1,4 @@
+import {sageColors as c} from '../../lib/theme';
 import { useState, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -87,11 +88,11 @@ export default function SessionsScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-sage-bg">
+    <SafeAreaView edges={['top']} className="flex-1 bg-sage-bg">
       {/* Header */}
-      <View className="px-5 pt-5 pb-4 flex-row justify-between items-start">
+      <View className="px-4 pt-3 pb-3 flex-row justify-between items-start">
         <View>
-          <Text className="text-sage-text text-3xl font-black">Sessions</Text>
+          <Text className="text-sage-text text-3xl font-black">Groups</Text>
           <Text className="text-sage-muted text-sm mt-0.5">
             {mine ? 'Sessions you host'
               : filter === 'Nearby' ? `Within ${NEARBY_RADIUS_KM} km`
@@ -103,7 +104,7 @@ export default function SessionsScreen() {
           activeOpacity={0.8}
           className="bg-sage-green rounded-xl px-4 py-2.5 mt-1"
         >
-          <Text className="text-black font-black text-sm tracking-wide">+ HOST</Text>
+          <Text className="text-sage-onAccent font-black text-sm tracking-wide">+ HOST</Text>
         </TouchableOpacity>
       </View>
 
@@ -111,7 +112,7 @@ export default function SessionsScreen() {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 20 }}
+        contentContainerStyle={{ paddingHorizontal: 16 }}
         className="mb-4 max-h-10"
       >
         {SPORT_FILTERS.map((f) => {
@@ -129,13 +130,13 @@ export default function SessionsScreen() {
               className="mr-2 px-4 py-1.5 rounded-full"
               style={{
                 backgroundColor: active
-                  ? isMine ? '#7c3aed' : isNearby ? '#3b82f6' : '#4ade80'
-                  : '#1a1a1a',
+                  ? isMine ? c.purple : isNearby ? c.info : c.green
+                  : c.surface,
               }}
             >
               <Text style={{
                 fontWeight: '700', fontSize: 13,
-                color: active ? (isMine || isNearby ? '#fff' : '#000') : '#737373',
+                color: active ? (isMine || isNearby ? c.onAccent : c.onAccent) : c.muted,
               }}>
                 {isLoading ? '…' : isNearby ? '📍 Nearby' : isMine ? '⚡ My Sessions' : f}
               </Text>
@@ -151,7 +152,7 @@ export default function SessionsScreen() {
           data={sessions}
           keyExtractor={(item) => item.id}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 20 }}
+          contentContainerStyle={{ paddingHorizontal: 16 }}
           renderItem={({ item }) => {
             const isHosted = item.host_id === user?.id;
             return (
@@ -191,7 +192,7 @@ export default function SessionsScreen() {
                   activeOpacity={0.8}
                   className="mt-5 bg-sage-green rounded-xl px-6 py-3"
                 >
-                  <Text className="text-black font-black tracking-wide">HOST A SESSION →</Text>
+                  <Text className="text-sage-onAccent font-black tracking-wide">HOST A SESSION →</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -207,5 +208,5 @@ function statusLabel(status: string) {
   return { open: 'Open', full: 'Full', archived: 'Archived', cancelled: 'Cancelled', completed: 'Done', draft: 'Draft' }[status] ?? status;
 }
 function statusColor(status: string) {
-  return { open: '#4ade80', full: '#f87171', archived: '#737373', cancelled: '#f87171', completed: '#60a5fa' }[status] ?? '#737373';
+  return { open: c.green, full: c.danger, archived: c.muted, cancelled: c.danger, completed: c.info }[status] ?? c.muted;
 }

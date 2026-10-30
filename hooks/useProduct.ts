@@ -5,10 +5,13 @@ import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { AthleteProfile,LevelDefinition,ProductChallenge,TrainingAnalysis,AroundMe,BoardAthlete,ScoreAudit } from '../types/product';
 const cache=new Map<string,unknown>();
+const refreshListeners=new Set<()=>void>();
+export function refreshProductData(){cache.clear();refreshListeners.forEach(refresh=>refresh());}
 export function useRpc<T>(name:string,args:Record<string,unknown>={},enabled=true) {
   const {user}=useAuth();
   const key=JSON.stringify(args),cacheKey=(user?.id??'anonymous')+name+key,[data,setData]=useState<T|null>(()=>cache.get(cacheKey) as T??null),[dataKey,setDataKey]=useState(cacheKey),[loading,setLoading]=useState(true),[error,setError]=useState<string|null>(null),[version,setVersion]=useState(0);
   const refresh=useCallback(()=>setVersion(v=>v+1),[]);
+  useEffect(()=>{refreshListeners.add(refresh);return()=>{refreshListeners.delete(refresh);};},[refresh]);
   useEffect(()=>subscribeHealthImport(id=>{if(id===user?.id)refresh();}),[user?.id,refresh]);
   useFocusEffect(useCallback(()=>{refresh();},[refresh]));
   useEffect(()=>{let active=true;if(!enabled){setLoading(false);return;}setDataKey(cacheKey);setData(cache.get(cacheKey) as T??null);setLoading(true);Promise.resolve(supabase.rpc(name,JSON.parse(key))).then(({data,error})=>{if(!active)return;if(data!=null){cache.set(cacheKey,data);setData(data);}setError(error?.message??null);setLoading(false);}).catch(e=>{if(active){setError(e instanceof Error?e.message:'Unable to load data');setLoading(false);}});return()=>{active=false;};},[name,key,cacheKey,enabled,version]);

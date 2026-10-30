@@ -1,9 +1,12 @@
 import { ReactNode } from 'react';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { sageColors } from '../../lib/theme';
-export type SageIconName = 'home' | 'flag' | 'mountain' | 'activity' | 'user' | 'heart' | 'chevron' | 'arrow' | 'list' | 'map' | 'clock' | 'route' | 'up' | 'check' | 'flame' | 'trophy' | 'shield' | 'info' | 'bike' | 'swim' | 'strength' | 'sun' | 'gift';
+export type SageIconName = 'shuffle' | 'plus' | 'users' | 'home' | 'flag' | 'mountain' | 'activity' | 'user' | 'heart' | 'chevron' | 'arrow' | 'list' | 'map' | 'clock' | 'route' | 'up' | 'check' | 'flame' | 'trophy' | 'shield' | 'info' | 'bike' | 'swim' | 'strength' | 'sun' | 'gift';
 export function SageIcon({ name, size = 20, color = sageColors.green }: { name: SageIconName; size?: number; color?: string }) {
   const paths: Record<string, ReactNode> = {
+    shuffle:<><Path d="M17 3h4v4M3 17l6-6M14 8l7-5M17 21h4v-4M3 7l6 6M14 16l7 5"/></>,
+    plus:<Path d="M12 5v14M5 12h14"/>,
+    users:<><Circle cx="9" cy="8" r="3.5"/><Path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><Circle cx="17" cy="9" r="2.6"/><Path d="M17 14.3c2.5.2 4.1 1.9 4.5 4.7"/></>,
     gift: <><Path d="M3 10h18v11H3ZM2 7h20v3H2ZM12 7v14" /><Path d="M12 7H7.5a2.5 2.5 0 1 1 2-4c1.4 1.1 2.5 4 2.5 4ZM12 7h4.5a2.5 2.5 0 1 0-2-4c-1.4 1.1-2.5 4-2.5 4Z" /></>,
     sun: <><Circle cx="12" cy="12" r="4" /><Path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4" /></>,
     strength: <><Path d="M6 8v8M3 10v4M18 8v8M21 10v4M6 12h12" /></>,

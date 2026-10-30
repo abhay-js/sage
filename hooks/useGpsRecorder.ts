@@ -4,6 +4,12 @@ import {useAuth} from '../context/AuthContext';
 import {GpsRecording,RecordingSport} from '../lib/gpsRecording';
 import {loadRecording,subscribeRecording,reconcileRecordingOwner,startRecording,pauseRecording,resumeRecording,finishRecording,discardRecording} from '../lib/gpsRecorder';
 import {submitRecording} from './useSubmissions';
+export function useRecordingDraft(){
+ const {user}=useAuth(),id=user?.id;
+ const [state,setState]=useState<{owner?:string;record:GpsRecording|null}>({record:null});
+ useEffect(()=>{let active=true;const read=async()=>{try{const record=id?await loadRecording(id):null;if(active)setState({owner:id,record});}catch{if(active)setState({owner:id,record:null});}};void read();const unsubscribe=subscribeRecording(()=>void read());return()=>{active=false;unsubscribe();};},[id]);
+ return state.owner===id?state.record:null;
+}
 export function useGpsRecorder(){
  const {user}=useAuth(),id=user?.id;
  const [record,setRecord]=useState<GpsRecording|null>(null),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[error,setError]=useState(''),[now,setNow]=useState(Date.now());

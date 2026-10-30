@@ -1,7 +1,7 @@
 import {View,Text,TouchableOpacity,Platform,Linking} from 'react-native';
 import {useRouter} from 'expo-router';
-import {Page,Header,Button,Section,s} from '../../components/ui/SageUI';
-import {sageColors as c} from '../../lib/theme';
+import {Page,Header,Button,Section,s} from '../../components/ui/AdventureUI';
+import {adventureColors as c} from '../../lib/theme';
 import {healthPlatformName} from '../../lib/healthSync';
 import {healthSupported,useHealthSync} from '../../context/HealthSyncContext';
 import {useAuth} from '../../context/AuthContext';
@@ -22,6 +22,7 @@ export default function HealthConnection(){
       {garmin.length>0?<Text style={{color:c.green}}>{garmin.length} Garmin workout{garmin.length===1?'':'s'} in recent imports · {garmin.filter(a=>(a.distance_meters??0)>0).length} with distance.</Text>:<Text style={s.muted}>No Garmin workouts found in recent imports yet. Import a completed Garmin workout to check its measurements.</Text>}
       <TouchableOpacity accessibilityRole="link" onPress={()=>void Linking.openURL(Platform.OS==='android'?'https://support.garmin.com/en-US/?faq=JToBEy0jfe6pIygark2Ui5':'https://support.garmin.com/en-US/?faq=lK5FPB9iPF5PXFkIpFlFPA')}><Text style={{color:c.green,fontWeight:'700'}}>Garmin setup instructions ↗</Text></TouchableOpacity>
     </View>
+    <View style={{marginTop:12}}><Button secondary title="Garmin connection options" icon="route" onPress={()=>router.push('/(app)/garmin')}/></View>
     <Section title="Recent imported workouts"/>{recent.map(a=><View key={a.id} style={[s.card,{padding:16,marginBottom:10}]}><Text style={s.section}>{a.activity_name}</Text><Text style={s.muted}>{new Date(a.activity_date).toLocaleDateString()} · {Math.round(a.moving_time_secs/60)} min · {a.distance_meters==null?'Distance unavailable':`${(a.distance_meters/1000).toFixed(2)} km`}</Text><Text style={{color:a.distance_meters==null?c.orange:c.green,fontSize:12,marginTop:8}}>{a.distance_meters==null?'Distance-based scoring needs a FIT file with distance.':'Distance and duration available for scoring after review.'}</Text></View>)}
     <Section title="Indoor cycling"/><View style={[s.card,{padding:20,gap:12}]}><Text style={s.muted}>Try importing the ride through your phone’s health platform first. If distance is missing, upload the original FIT file exported from Garmin Connect, Zwift or MyWhoosh. Sage reads available distance, duration, heart rate and power from the file for admin review.</Text><Text style={s.muted}>Use one submission per workout. If a health import already exists, tell the admin in the FIT submission note so the same ride is not approved twice.</Text><Button title="Upload a FIT workout" icon="activity" onPress={()=>router.push('/(app)/submit-activity')}/></View>
     <TouchableOpacity accessibilityRole="link" onPress={()=>router.push('/privacy')} style={{paddingVertical:20}}><Text style={{color:c.green}}>Privacy and health permissions</Text></TouchableOpacity>

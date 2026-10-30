@@ -1,3 +1,4 @@
+import {sageColors as c} from '../../lib/theme';
 import { useState, useEffect, ReactNode } from 'react';
 import {
   View, Text, ScrollView, TextInput, TouchableOpacity, Alert,
@@ -118,14 +119,14 @@ export default function SessionEditScreen() {
 
   if (fetching) {
     return (
-      <SafeAreaView className="flex-1 bg-sage-bg items-center justify-center">
-        <ActivityIndicator color="#4ade80" />
+      <SafeAreaView edges={['top']} className="flex-1 bg-sage-bg items-center justify-center">
+        <ActivityIndicator color={c.green} />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-sage-bg">
+    <SafeAreaView edges={['top']} className="flex-1 bg-sage-bg">
       <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
           <View className="px-5 pt-4">
@@ -145,7 +146,7 @@ export default function SessionEditScreen() {
                     className={`flex-1 py-3 rounded-xl items-center ${sport === s ? 'bg-sage-green' : 'bg-sage-surface'}`}
                   >
                     <Text style={{ fontSize: 18 }}>{SPORT_ICONS[s]}</Text>
-                    <Text className={`text-xs font-bold mt-1 ${sport === s ? 'text-black' : 'text-sage-muted'}`}>{s}</Text>
+                    <Text className={`text-xs font-bold mt-1 ${sport === s ? 'text-sage-onAccent' : 'text-sage-muted'}`}>{s}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -210,7 +211,7 @@ export default function SessionEditScreen() {
                     {RIDE_TYPES.map((rt) => (
                       <TouchableOpacity
                         key={rt} onPress={() => setRideType(rideType === rt ? '' : rt)} activeOpacity={0.8}
-                        className={`px-3 py-1.5 rounded-full border ${rideType === rt ? 'border-sage-green bg-sage-green/10' : 'border-[#2a2a2a] bg-sage-surface'}`}
+                        className={`px-3 py-1.5 rounded-full border ${rideType === rt ? 'border-sage-green bg-sage-green/10' : 'border-sage-border bg-sage-surface'}`}
                       >
                         <Text className={`text-xs font-bold ${rideType === rt ? 'text-sage-green' : 'text-sage-muted'}`}>
                           {RIDE_TYPE_LABELS[rt]}
@@ -245,7 +246,7 @@ export default function SessionEditScreen() {
                     {RUN_WORKOUT_TYPES.map((wt) => (
                       <TouchableOpacity
                         key={wt} onPress={() => setWorkoutType(workoutType === wt ? '' : wt)} activeOpacity={0.8}
-                        className={`px-3 py-1.5 rounded-full border ${workoutType === wt ? 'border-sage-green bg-sage-green/10' : 'border-[#2a2a2a] bg-sage-surface'}`}
+                        className={`px-3 py-1.5 rounded-full border ${workoutType === wt ? 'border-sage-green bg-sage-green/10' : 'border-sage-border bg-sage-surface'}`}
                       >
                         <Text className={`text-xs font-bold ${workoutType === wt ? 'text-sage-green' : 'text-sage-muted'}`}>
                           {RUN_TYPE_LABELS[wt]}
@@ -282,9 +283,9 @@ export default function SessionEditScreen() {
 
             <TouchableOpacity
               onPress={save} disabled={saving} activeOpacity={0.85}
-              className="bg-sage-green rounded-2xl py-4 items-center mt-2 mb-10"
+              className="bg-sage-green rounded-2xl py-4 items-center mt-2 mb-4"
             >
-              <Text className="text-black font-black text-base tracking-widest">
+              <Text className="text-sage-onAccent font-black text-base tracking-widest">
                 {saving ? 'SAVING…' : 'SAVE CHANGES →'}
               </Text>
             </TouchableOpacity>
@@ -308,7 +309,7 @@ function Input({ style, ...props }: TextInputProps & { style?: object }) {
   return (
     <TextInput
       className="bg-sage-surface rounded-xl px-4 py-3 text-sage-text text-sm"
-      placeholderTextColor="#525252"
+      placeholderTextColor={c.muted}
       style={style}
       {...props}
     />

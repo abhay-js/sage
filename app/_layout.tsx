@@ -54,11 +54,11 @@ function RootNavigator() {
   }
 
   return (
-    <>
+    <View style={{flex:1,backgroundColor:sageColors.bg}}>
       <StatusBar style="dark" />
       <Slot />
       <DevSwitcher />
-    </>
+    </View>
   );
 }
 

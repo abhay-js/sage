@@ -1,3 +1,4 @@
+import {sageColors as c} from '../lib/theme';
 import { View, Text, TouchableOpacity, Alert } from 'react-native';
 import { Race, Entry } from '../types';
 
@@ -30,7 +31,7 @@ export function RaceCard({ race, entry, onJoin, onLeave, onPress }: Props) {
     ]);
   }
 
-  const cardStyle = entry ? { borderLeftWidth: 3, borderLeftColor: '#4ade80' } : undefined;
+  const cardStyle = entry ? { borderLeftWidth: 3, borderLeftColor: c.green } : undefined;
 
   const inner = (
     <>
@@ -48,7 +49,7 @@ export function RaceCard({ race, entry, onJoin, onLeave, onPress }: Props) {
 
       <View className="flex-row flex-wrap gap-1.5 mb-3">
         {race.sport_types.map((s) => (
-          <View key={s} className="flex-row items-center gap-1 bg-[#0a0a0a] px-2.5 py-1 rounded-full">
+          <View key={s} className="flex-row items-center gap-1 bg-sage-divider px-2.5 py-1 rounded-full">
             <Text style={{ fontSize: 11 }}>{SPORT_ICONS[s] ?? '🏅'}</Text>
             <Text className="text-sage-muted text-xs font-semibold">{s}</Text>
           </View>
@@ -67,7 +68,7 @@ export function RaceCard({ race, entry, onJoin, onLeave, onPress }: Props) {
             <Text className="text-sage-muted text-[10px] font-bold tracking-widest uppercase">Progress</Text>
             <Text className="text-sage-muted text-[10px] font-bold">{Math.round(progress * 100)}%</Text>
           </View>
-          <View className="h-2 bg-[#0a0a0a] rounded-full overflow-hidden mb-3">
+          <View className="h-2 bg-sage-divider rounded-full overflow-hidden mb-3">
             <View className="h-full bg-sage-green rounded-full" style={{ width: `${Math.round(progress * 100)}%` }} />
           </View>
           {onLeave && (
@@ -82,7 +83,7 @@ export function RaceCard({ race, entry, onJoin, onLeave, onPress }: Props) {
           className="bg-sage-green rounded-xl py-3 items-center"
           activeOpacity={0.8}
         >
-          <Text className="text-black font-black text-sm tracking-widest">JOIN RACE →</Text>
+          <Text className="text-sage-onAccent font-black text-sm tracking-widest">JOIN RACE →</Text>
         </TouchableOpacity>
       )}
     </>

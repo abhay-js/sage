@@ -1,3 +1,4 @@
+import {sageColors as c} from '../../lib/theme';
 import { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Alert, Share } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -80,7 +81,7 @@ export default function VillageScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-sage-bg">
+    <SafeAreaView edges={['top']} className="flex-1 bg-sage-bg">
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         <View className="px-5 pt-5 pb-3">
           <Text className="text-sage-text text-3xl font-black">Village</Text>
@@ -119,7 +120,7 @@ export default function VillageScreen() {
               </View>
             ) : (
               <>
-                <View className="bg-[#0a0a0a] rounded-xl p-3 mb-3 items-center">
+                <View className="bg-sage-divider rounded-xl p-3 mb-3 items-center">
                   <Text className="text-sage-muted text-xs mb-0.5">UPI ID</Text>
                   <Text className="text-sage-text font-black text-base">{UPI_ID}</Text>
                 </View>
@@ -129,7 +130,7 @@ export default function VillageScreen() {
                   activeOpacity={0.8}
                   className="bg-sage-green rounded-xl py-3 items-center"
                 >
-                  <Text className="text-black font-black tracking-wide">
+                  <Text className="text-sage-onAccent font-black tracking-wide">
                     {uploading ? 'UPLOADING…' : 'UPLOAD PAYMENT SCREENSHOT'}
                   </Text>
                 </TouchableOpacity>
@@ -148,7 +149,7 @@ export default function VillageScreen() {
             </Text>
 
             {/* Code + share */}
-            <View className="bg-[#0a0a0a] rounded-xl px-4 py-3 flex-row justify-between items-center mb-4">
+            <View className="bg-sage-divider rounded-xl px-4 py-3 flex-row justify-between items-center mb-4">
               <View>
                 <Text className="text-sage-muted text-[10px] font-bold tracking-widest uppercase mb-0.5">
                   Your code
@@ -160,7 +161,7 @@ export default function VillageScreen() {
                 activeOpacity={0.8}
                 className="bg-sage-green px-5 py-2 rounded-xl"
               >
-                <Text className="text-black font-black text-sm">SHARE</Text>
+                <Text className="text-sage-onAccent font-black text-sm">SHARE</Text>
               </TouchableOpacity>
             </View>
 
@@ -168,13 +169,13 @@ export default function VillageScreen() {
             {referrals.length > 0 && (
               <>
                 <View className="flex-row gap-3 mb-4">
-                  <View className="flex-1 bg-[#0a0a0a] rounded-xl p-3 items-center">
+                  <View className="flex-1 bg-sage-divider rounded-xl p-3 items-center">
                     <Text className="text-sage-text font-black text-xl">{referrals.length}</Text>
                     <Text className="text-sage-muted text-[10px] font-bold tracking-widest uppercase mt-0.5">
                       Invited
                     </Text>
                   </View>
-                  <View className="flex-1 bg-[#0a0a0a] rounded-xl p-3 items-center">
+                  <View className="flex-1 bg-sage-divider rounded-xl p-3 items-center">
                     <Text className="text-sage-green font-black text-xl">₹{totalCash}</Text>
                     <Text className="text-sage-muted text-[10px] font-bold tracking-widest uppercase mt-0.5">
                       Earned
@@ -188,7 +189,7 @@ export default function VillageScreen() {
                   return (
                     <View
                       key={r.id}
-                      className="flex-row justify-between items-center py-2.5 border-b border-[#141414]"
+                      className="flex-row justify-between items-center py-2.5 border-b border-sage-divider"
                     >
                       <Text className="text-sage-text text-sm font-semibold">
                         {r.referred_user?.name ?? 'Friend'}

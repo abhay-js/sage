@@ -1,3 +1,4 @@
+import {sageColors as c} from '../lib/theme';
 import { View, Text } from 'react-native';
 import { ActivityLog } from '../types';
 
@@ -51,7 +52,7 @@ export function StreakDots({ activities, sportTypes, weeks = 10 }: Props) {
               width: DOT,
               height: DOT,
               borderRadius: 5,
-              backgroundColor: d.active ? '#4ade80' : '#1a1a1a',
+              backgroundColor: d.active ? c.green : c.surface,
             }}
           />
         ))}

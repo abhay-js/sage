@@ -1,3 +1,4 @@
+import {sageColors as c} from '../lib/theme';
 interface Props {
   value: Date;
   onChange: (d: Date) => void;
@@ -35,14 +36,14 @@ export function DatePickerField({ value, onChange, mode, minimumDate }: Props) {
       }}
       style={{
         width: '100%',
-        background: '#1a1a1a',
-        color: '#f5f5f5',
-        border: '1px solid #2a2a2a',
+        background: c.surface,
+        color: c.text,
+        border: `1px solid ${c.border}`,
         borderRadius: 10,
         padding: '10px 16px',
         fontSize: 14,
         boxSizing: 'border-box',
-        colorScheme: 'dark',
+        colorScheme: 'light',
         outline: 'none',
       } as React.CSSProperties}
     />

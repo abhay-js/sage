@@ -4,12 +4,12 @@ import Svg,{Path,Line,Circle,Text as SvgText} from 'react-native-svg';
 import { ActivityLog } from '../../types';
 import { useWorkoutMetrics } from '../../hooks/useWorkoutMetrics';
 import { MetricSample,formatPace,routeSeries,routeSplits } from '../../lib/activityMetrics';
-import { sageColors as c } from '../../lib/theme';
-import { s,Section,Button } from './SageUI';
+import { adventureColors as c } from '../../lib/theme';
+import { s,Section,Button } from './AdventureUI';
 import { MetricGrid,Skeleton } from './ProductUI';
 
 function elapsed(seconds:number){const total=Math.round(seconds);return `${Math.floor(total/60)}:${String(total%60).padStart(2,'0')}`;}
-function MetricChart({title,samples,duration,unit,color,pace=false,empty}:{title:string;samples:MetricSample[];duration:number;unit:string;color:string;pace?:boolean;empty:string}){
+export function MetricChart({title,samples,duration,unit,color,pace=false,empty}:{title:string;samples:MetricSample[];duration:number;unit:string;color:string;pace?:boolean;empty:string}){
   const [selected,setSelected]=useState<MetricSample|null>(null),[width,setWidth]=useState(320);
   const values=samples.map(p=>p.value),min=values.reduce((a,v)=>Math.min(a,v),Infinity),max=values.reduce((a,v)=>Math.max(a,v),-Infinity);
   const padding=Number.isFinite(max)?Math.max(1,(max-min)*0.15):1,low=unit==='m'?min-padding:Math.max(0,min-padding),high=max+padding,span=Math.max(1,high-low),end=samples.reduce((end,s)=>Math.max(end,s.seconds),Math.max(1,duration));
@@ -56,7 +56,7 @@ export function WorkoutAnalytics({activity}:{activity:ActivityLog}){
     <Section title="Performance charts"/>{metrics.loading?<Skeleton/>:<>
       <MetricChart title="Heart rate" samples={metrics.heartRate} duration={duration} unit="bpm" color={c.orange} empty={metrics.heartError??'No heart-rate samples are readable for this workout. A recorded average alone cannot produce a graph.'}/>
       {(riding||paceSport)&&<MetricChart title={riding?'Speed':'Pace'} samples={riding?series.speed:swimming?series.pace.map(p=>({...p,value:p.value/10})):series.pace} duration={duration} unit={riding?'km/h':swimming?'min/100m':'min/km'} color={c.green} pace={!riding} empty={metrics.routeError??'No timed GPS speed data is available. Indoor workouts may have distance totals without a pace graph.'}/>}
-      {!!series.elevation.length&&<MetricChart title="Elevation" samples={series.elevation} duration={duration} unit="m" color={c.green} empty="No elevation samples recorded."/>}
+      {!swimming&&!!series.elevation.length&&<MetricChart title="Elevation" samples={series.elevation} duration={duration} unit="m" color={c.green} empty="No elevation samples recorded."/>}
       <Text style={[s.muted,{fontSize:11,marginBottom:14}]}>Heart rate: Health samples within this workout’s time window. Pace/speed and elevation: recorded GPS route. Stationary pace segments and missing intervals are omitted. These charts stay on this iPhone.</Text>
       {(metrics.heartError||metrics.routeError)&&<Button title="Retry sample lookup" onPress={metrics.retry}/>}</>}
     {splits.length>0&&<><Section title={riding?'5 km splits':swimming?'100 m splits':'Kilometer splits'}/><Text style={[s.muted,{fontSize:11,marginBottom:12}]}>Derived from available GPS points, using elapsed time. Route gaps produce partial splits.</Text><View style={s.card}>{splits.map((split,i)=><View key={i} style={[s.between,{padding:14,borderBottomWidth:1,borderColor:c.border}]}><Text style={s.muted}>{i+1}{split.partial?' · partial':''} · {(split.distance/1000).toFixed(2)} km</Text><Text style={s.section}>{riding?`${(split.distance/split.seconds*3.6).toFixed(1)} km/h`:`${formatPace(split.seconds/60/(split.distance/(swimming?100:1000)))} /${swimming?'100m':'km'}`}</Text></View>)}</View></>}

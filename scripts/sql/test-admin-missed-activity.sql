@@ -1,0 +1,23 @@
+BEGIN;
+CREATE TEMP TABLE test_ids AS SELECT (SELECT id FROM public.users WHERE email='dev.admin@sage.test') AS admin_id,(SELECT id FROM public.users WHERE email='dev.user1@sage.test') AS athlete_id;
+GRANT SELECT ON test_ids TO authenticated;
+SELECT set_config('request.jwt.claim.sub',(SELECT athlete_id::text FROM test_ids),true);
+SET LOCAL ROLE authenticated;
+DO $$ DECLARE ok boolean:=false; BEGIN BEGIN PERFORM public.admin_missed_activity_history((SELECT athlete_id FROM test_ids));ok:=true;EXCEPTION WHEN insufficient_privilege THEN NULL;END;IF ok THEN RAISE EXCEPTION 'Athlete can read admin audit';END IF;
+BEGIN PERFORM public.admin_add_missed_activity((SELECT athlete_id FROM test_ids),'{}','00000000-0000-4000-8000-000000000001');ok:=true;EXCEPTION WHEN insufficient_privilege THEN NULL;END;IF ok THEN RAISE EXCEPTION 'Athlete can add workout';END IF; END;$$;
+RESET ROLE;
+SELECT set_config('request.jwt.claim.sub',(SELECT admin_id::text FROM test_ids),true);
+SET LOCAL ROLE authenticated;
+DO $$ DECLARE payload jsonb:=jsonb_build_object('sport_type','Run','activity_name','Test workout','activity_started_at','2010-01-01T07:00:00Z','moving_time_secs',1800,'distance_meters',5000,'reason','Test import issue','evidence_url','https://example.com/test-proof'); v jsonb; again jsonb; ok boolean; BEGIN
+ v:=public.admin_add_missed_activity((SELECT athlete_id FROM test_ids),payload,'00000000-0000-4000-8000-000000000001');
+ again:=public.admin_add_missed_activity((SELECT athlete_id FROM test_ids),payload,'00000000-0000-4000-8000-000000000001');
+ IF v->>'activity_id' IS DISTINCT FROM again->>'activity_id' OR (again->>'created')::boolean THEN RAISE EXCEPTION 'Idempotency failed'; END IF;
+ IF jsonb_array_length(public.admin_missed_activity_history((SELECT athlete_id FROM test_ids)))<1 THEN RAISE EXCEPTION 'Audit missing'; END IF;
+ ok:=false;BEGIN PERFORM public.admin_add_missed_activity((SELECT athlete_id FROM test_ids),payload,'00000000-0000-4000-8000-000000000002');ok:=true;EXCEPTION WHEN raise_exception THEN NULL;END;IF ok THEN RAISE EXCEPTION 'Duplicate evidence accepted';END IF;
+ ok:=false;BEGIN PERFORM public.admin_add_missed_activity((SELECT athlete_id FROM test_ids),jsonb_set(payload,'{evidence_url}','"http://invalid"'),'00000000-0000-4000-8000-000000000003');ok:=true;EXCEPTION WHEN raise_exception THEN NULL;END;IF ok THEN RAISE EXCEPTION 'Invalid evidence accepted';END IF;
+ ok:=false;BEGIN PERFORM public.admin_add_missed_activity((SELECT athlete_id FROM test_ids),jsonb_set(payload,'{evidence_url}','"https://example.com/other"'),'00000000-0000-4000-8000-000000000004');ok:=true;EXCEPTION WHEN raise_exception THEN NULL;END;IF ok THEN RAISE EXCEPTION 'Duplicate workout accepted';END IF;
+END;$$;
+RESET ROLE;
+DO $$ BEGIN IF NOT EXISTS(SELECT 1 FROM public.activity_logs a JOIN public.workout_reviews r ON r.activity_id=a.id WHERE a.strava_activity_id='admin_00000000-0000-4000-8000-000000000001' AND r.status='approved') THEN RAISE EXCEPTION 'Workout not approved';END IF; IF has_function_privilege('anon','public.admin_add_missed_activity(uuid,jsonb,uuid)','EXECUTE') THEN RAISE EXCEPTION 'Anon can execute';END IF; END;$$;
+SELECT 'PASS: admin-only audited addition, approval, replay and duplicate checks' AS result;
+ROLLBACK;

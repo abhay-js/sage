@@ -1,3 +1,4 @@
+import {sageColors as c} from '../../lib/theme';
 import { useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, Alert, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -59,7 +60,7 @@ export default function PaymentsScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-sage-bg">
+    <SafeAreaView edges={['left','right']} className="flex-1 bg-sage-bg">
       <View className="px-4 pt-4 pb-2">
         <Text className="text-sage-text text-xl font-bold">Pending Payments</Text>
         <Text className="text-sage-muted text-sm">{users.length} pending</Text>
@@ -105,7 +106,7 @@ export default function PaymentsScreen() {
                   onPress={() => approve(item)}
                   className="flex-1 bg-sage-green rounded-xl py-2.5 items-center"
                 >
-                  <Text className="text-black font-semibold text-sm">Approve</Text>
+                  <Text className="text-sage-onAccent font-semibold text-sm">Approve</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => reject(item)}

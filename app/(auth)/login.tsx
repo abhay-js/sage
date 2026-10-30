@@ -1,3 +1,4 @@
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, ScrollView, Platform } from 'react-native';
 import { supabase } from '../../lib/supabase';
@@ -6,6 +7,7 @@ import { Link, useRouter } from 'expo-router';
 import { Brand } from '../../components/ui/SageUI';
 
 export default function LoginScreen({ initialCreating = false }: { initialCreating?: boolean }) {
+  const insets=useSafeAreaInsets();
   const { refreshProfile, error: profileError } = useAuth();
   const [creating, setCreating] = useState(initialCreating);
   const [name, setName] = useState('');
@@ -61,9 +63,9 @@ export default function LoginScreen({ initialCreating = false }: { initialCreati
   const fieldClass = 'bg-sage-surface border border-sage-border rounded-2xl px-4 py-4 text-sage-text mb-4';
   return (
     <KeyboardAvoidingView className="flex-1 bg-sage-bg" behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 24 }} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingHorizontal: 20, paddingTop: insets.top+16, paddingBottom: insets.bottom+16 }} keyboardShouldPersistTaps="handled">
         <View className="w-full max-w-md self-center">
-          <View className="items-center mb-10"><Brand /><Text className="text-sage-muted text-base mt-4 text-center">Every workout. Another step up.</Text></View>
+          <View className="items-center mb-6"><Brand /><Text className="text-sage-muted text-base mt-4 text-center">Every workout. Another step up.</Text></View>
           <Text className="text-sage-text text-2xl font-bold mb-6">{creating ? 'Join the village' : 'Welcome back'}</Text>
           {creating && <>
             <Text className="text-sage-muted mb-2">Name</Text>
@@ -76,7 +78,7 @@ export default function LoginScreen({ initialCreating = false }: { initialCreati
           {creating&&<><Text className="text-sage-muted mb-2">Confirm Password</Text><TextInput accessibilityLabel="Confirm Password" value={confirmation} onChangeText={setConfirmation} secureTextEntry autoCapitalize="none" className={fieldClass}/></>}
           {!creating&&<TouchableOpacity accessibilityRole="button" onPress={()=>router.push('/(auth)/forgot-password')} className="pb-4"><Text className="text-sage-orange">Forgot password?</Text></TouchableOpacity>}
           {!!(message || profileError) && <Text accessibilityRole="alert" accessibilityLiveRegion="polite" className="text-sage-orange mb-4">{message || profileError}</Text>}
-          <TouchableOpacity accessibilityRole="button" disabled={loading} onPress={submit} activeOpacity={0.85} className="bg-sage-orange rounded-2xl py-4 items-center" style={{ opacity: loading ? 0.6 : 1 }}>
+          <TouchableOpacity accessibilityRole="button" disabled={loading} onPress={submit} activeOpacity={0.85} className="bg-sage-primary rounded-2xl py-4 items-center" style={{ opacity: loading ? 0.6 : 1 }}>
             <Text className="text-sage-onAccent font-black text-base">{loading ? 'Please wait…' : creating ? 'CREATE ACCOUNT' : 'SIGN IN'}</Text>
           </TouchableOpacity>
           <TouchableOpacity accessibilityRole="button" disabled={loading} onPress={() => { setCreating(!creating); setMessage(''); setPassword(''); }} className="py-5 items-center">

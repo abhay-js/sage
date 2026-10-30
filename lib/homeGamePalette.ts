@@ -1,0 +1,2 @@
+import {homeColors} from './homePalette';
+export const gameColors={...homeColors,sky:'#3E5E9E',sunset:'#FFA971',far:'#B49AB4',mid:'#8A7A98',mountainDark:'#5E5A78',grass:'#3E6A3A',trees:'#26442A',sun:'#FFD45C',fire:'#FF8A3D',wood:'#6A4A30',dark:'#1E2440',panel:'#2A3256',panelBorder:'#3E4870',mutedLight:'#B8C2DE',gold:'#FFC94D',bronze:'#C8834E',silver:'#C9D2DA',legendary:'#B98CFF',white:'#FFFFFF',ink:'#0F1B24',shadow:'#10122C99'} as const;

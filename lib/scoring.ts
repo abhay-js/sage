@@ -18,7 +18,7 @@ export function computeScore(
   const qualifying = activities.filter((a) => {
     const t = new Date(a.activity_date).getTime();
     const review = a.review_status;
-    return review === 'approved' && race.sport_types.includes(a.sport_type) && t >= start && t <= end;
+    return review !== 'rejected' && race.sport_types.includes(a.sport_type) && t >= start && t <= end;
   });
 
   const sessions = qualifying.length;

@@ -6,12 +6,12 @@
     "scheme": "sage",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "dark",
+    "userInterfaceStyle": "light",
     "newArchEnabled": false,
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0a0a0a"
+      "backgroundColor": "#F3F7FA"
     },
     "ios": {
       "supportsTablet": false,
@@ -34,7 +34,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#0a0a0a"
+        "backgroundColor": "#F3F7FA"
       },
       "package": "com.sage.app",
       "permissions": [
@@ -57,8 +57,8 @@
       "name": "Sage",
       "shortName": "Sage",
       "description": "Train with the village. Compete. Improve. Win.",
-      "themeColor": "#0a0a0a",
-      "backgroundColor": "#0a0a0a",
+      "themeColor": "#F3F7FA",
+      "backgroundColor": "#F3F7FA",
       "display": "standalone",
       "orientation": "portrait",
       "scope": "/",
@@ -93,6 +93,14 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "androidStatusBar": {
+      "backgroundColor": "#F3F7FA",
+      "barStyle": "dark-content"
+    },
+    "androidNavigationBar": {
+      "backgroundColor": "#F3F7FA",
+      "barStyle": "dark-content"
     }
   }
 }

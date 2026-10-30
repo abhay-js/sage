@@ -9,16 +9,17 @@ import { sageColors as c } from '../../lib/theme';
 export default function WorkoutReviewsScreen() {
   const { user } = useAuth();
   const router = useRouter();
-  const { athleteId } = useLocalSearchParams<{athleteId?:string}>();
-  const [status,setStatus] = useState<ReviewStatus | 'all'>('pending');
-  const [search,setSearch] = useState('');
-  const [query,setQuery] = useState('');
+  const { athleteId, activityId, activityName } = useLocalSearchParams<{athleteId?:string;activityId?:string;activityName?:string}>();
+  const [status,setStatus] = useState<ReviewStatus | 'all'>('all');
+  const [search,setSearch] = useState(activityName ?? '');
+  const [query,setQuery] = useState(activityName ?? '');
   const [selected,setSelected] = useState<ReviewWorkout | null>(null);
   const [reason,setReason] = useState('');
   const [saving,setSaving] = useState(false);
   useEffect(() => { const t = setTimeout(() => setQuery(search.trim()),350); return () => clearTimeout(t); },[search]);
   const {workouts,total,loading,error,refetch,review,offset,nextPage,previousPage,hasMore} = useWorkoutReviews(user?.role === 'admin',status,query,athleteId);
   useFocusEffect(useCallback(() => {refetch();},[refetch]));
+  useEffect(() => { if (activityId && workouts.length) { const match=workouts.find(w => w.id===activityId); if (match) { setSelected(match); setReason(match.review_reason ?? ''); router.setParams({activityId:undefined}); } } },[activityId,workouts,router]);
   const badgeColor = (state: ReviewStatus) => state === 'rejected' ? c.orange : state === 'approved' ? c.green : c.muted;
   function open(workout: ReviewWorkout) { setSelected(workout); setReason(workout.review_reason ?? ''); }
   async function decide(next: 'approved' | 'rejected') {
@@ -41,7 +42,7 @@ export default function WorkoutReviewsScreen() {
       ['Status',selected.review_status],['Sport',selected.sport_type],['Duration',`${Math.round(selected.moving_time_secs/60)} min`],['Distance',selected.distance_meters == null ? '—' : `${(selected.distance_meters/1000).toFixed(2)} km`],['Calories',selected.calories == null ? '—' : `${Math.round(selected.calories)} kcal`],['Average heart rate',selected.avg_heartrate == null ? '—' : `${Math.round(selected.avg_heartrate)} bpm`],['Maximum heart rate',selected.max_heartrate == null ? '—' : `${Math.round(selected.max_heartrate)} bpm`],['Elevation',selected.elevation_gain == null ? '—' : `${Math.round(selected.elevation_gain)} m`]
     ].map(([label,value]) => <View key={label} style={[s.between,{paddingVertical:10,gap:12,borderBottomWidth:1,borderColor:c.border}]}><Text style={s.muted}>{label}</Text><Text style={s.section}>{value}</Text></View>)}</View>
     {selected.review_reason && <Text style={[s.muted,{marginTop:12}]}>Last reason: {selected.review_reason}</Text>}
-    <Section title="Review decision"/><Text style={s.muted}>Pending workouts wait for approval before counting toward challenges. Rejecting removes them from race scoring; approval marks them valid.</Text>
+    <Section title="Review decision"/><Text style={s.muted}>Rejecting a workout removes it from race scoring. Approval keeps it eligible and resolves any automatic flag.</Text>
     <TextInput accessibilityLabel="Rejection reason" placeholder="Reason for rejection (required to reject)" placeholderTextColor={c.muted} multiline maxLength={1000} value={reason} onChangeText={setReason} editable={!saving} style={[s.card,{padding:16,color:c.text,minHeight:105,textAlignVertical:'top',marginTop:16,marginBottom:18}]}/>
     <Button title={saving ? 'Saving…' : 'Approve workout'} icon="check" disabled={saving} onPress={() => decide('approved')}/><TouchableOpacity disabled={saving} onPress={() => decide('rejected')} style={{padding:18,borderWidth:1,borderColor:c.orange,borderRadius:15,alignItems:'center',marginTop:12,opacity:saving ? 0.5 : 1}}><Text style={{color:c.orange,fontWeight:'800'}}>Reject workout</Text></TouchableOpacity>
     {!!selected.review_history.length && <><Section title="Review history"/>{selected.review_history.map((item,index) => <View key={index} style={[s.card,{padding:16,marginBottom:10}]}><Text style={{color:badgeColor(item.status),fontWeight:'800'}}>{item.status.toUpperCase()}</Text><Text style={s.muted}>{new Date(item.reviewed_at).toLocaleString('en-IN')}</Text>{item.reason && <Text style={s.muted}>{item.reason}</Text>}</View>)}</>}
