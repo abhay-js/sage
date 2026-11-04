@@ -9,7 +9,6 @@ import type { ScoreAudit } from '../../types/product';
 import { SPORT_OPTIONS } from '../../lib/productConfig';
 import { activityLogColors as c } from '../../lib/activityLogPalette';
 import { LOG_FILTERS, LogSport, logSport, logSource, logStats, logWhen, logActiveTime, monthlyLog, weeklyLog, liveLogChallenges } from '../../lib/activityLog';
-import { ActivityLogDetails } from '../../components/ui/ActivityLogDetails';
 import { DawnAvatar } from '../../components/ui/DawnArt';
 import { AvatarEditor } from '../../components/ui/AvatarEditor';
 import { AthleteAvatar } from '../../lib/avatar';
@@ -23,10 +22,10 @@ export default function ActivityScreen() {
   const {activities,loading,error,refetch}=useActivities(user?.id),athlete=useAthleteProfile(),catalog=useProductChallenges();
   const receipts=useRpc<ScoreAudit[]>('sage_workout_scores',{p_activity_id:null},!!user?.id);
   const [refreshing,setRefreshing]=useState(false);
-  const [tab,setTab]=useState<ProfileTab>('Activity log'),[sport,setSport]=useState<LogSport>('all'),[selectedId,setSelectedId]=useState<string>();
+  const [tab,setTab]=useState<ProfileTab>('Activity log'),[sport,setSport]=useState<LogSport>('all');
   const raceId=params.raceId??'all';
   const [avatarEditor,setAvatarEditor]=useState(false),[avatarSaved,setAvatarSaved]=useState(false),[signingOut,setSigningOut]=useState(false),[actionError,setActionError]=useState('');
-  useEffect(()=>{setSelectedId(undefined);setSport('all');setTab('Activity log');setAvatarEditor(false);setAvatarSaved(false);setActionError('');},[user?.id]);
+  useEffect(()=>{setSport('all');setTab('Activity log');setAvatarEditor(false);setAvatarSaved(false);setActionError('');},[user?.id]);
   useFocusEffect(useCallback(()=>{void refetch();},[refetch]));
   const profile=athlete.data?.profile,name=profile?.full_name||user?.name||'Your athlete';
   const sports=SPORT_OPTIONS.filter(option=>profile?.sports.includes(option.id)).map(option=>option.label);
@@ -37,7 +36,6 @@ export default function ActivityScreen() {
   const scoped=useMemo(()=>raceId==='all'?activities:activities.filter(activity=>(receipts.data??[]).some(receipt=>receipt.activity_id===activity.id&&receipt.race_id===raceId)),[activities,receipts.data,raceId]);
   const groups=useMemo(()=>weeklyLog(scoped,sport),[scoped,sport]);
   const listLoading=loading||(raceId!=='all'&&receipts.loading);
-  const selected=activities.find(activity=>activity.id===selectedId),selectedChallenges=selected?.review_status==='rejected'?[]:liveMembership.get(selectedId??'')??[];
   const challengeName=(catalog.data??[]).find(ch=>ch.id===raceId)?.name||(receipts.data??[]).find(receipt=>receipt.race_id===raceId)?.race_name||'Selected challenge';
   const joined=(catalog.data??[]).filter(ch=>ch.joined);
   const maxBar=Math.max(1,...summary.bars.map(bar=>bar.minutes));
@@ -67,7 +65,7 @@ export default function ActivityScreen() {
       {(receipts.error||catalog.error)&&<TouchableOpacity accessibilityRole="button" onPress={()=>{receipts.refresh();catalog.refresh();}} style={styles.notice}><Text style={styles.caption}>Challenge links couldn’t load. Tap to retry.</Text></TouchableOpacity>}
       {!groups.length?<View style={styles.empty}>{listLoading?<ActivityIndicator color={c.green}/>:<SageIcon name="activity" size={28} color={c.green}/>}<Text style={styles.emptyTitle}>{listLoading?'Loading your workouts…':error?'Workouts unavailable':activities.length?'No matching workouts':'Your training starts here'}</Text><Text style={[styles.caption,{textAlign:'center'}]}>{listLoading?'Loading your training log and workout links…':error?'Use Retry workouts to load your training log.':activities.length?'Try another sport or show all workouts.':'Record your next session or connect a workout source to start your log.'}</Text>{!listLoading&&!error&&!activities.length&&<View style={styles.emptyActions}>{link('Record a workout','route',()=>router.push('/(app)/record-activity'))}{link('Connect or import','heart',()=>router.push('/(app)/health-connect'))}</View>}</View>:groups.map(group=><View key={group.key} style={styles.group}>
         <View style={[styles.between,{paddingHorizontal:4,flexDirection:narrow?'column':'row',alignItems:narrow?'flex-start':'baseline',gap:narrow?3:8}]}><Text accessibilityRole="header" style={styles.groupTitle}>{group.title}</Text><Text style={styles.groupSummary}>{group.items.length} {group.items.length===1?'workout':'workouts'} · {group.distance.toLocaleString('en-IN',{maximumFractionDigits:1})} km</Text></View>
-        <View style={styles.workouts}>{group.items.map((activity,index)=>{const kind=logSport(activity.sport_type),colors=c.sports[kind],count=activity.review_status==='rejected'?0:(liveMembership.get(activity.id)?.length??0);const tag=membershipReady?count?`In ${count} ${count===1?'challenge':'challenges'}`:'No live challenge':receipts.error||catalog.error?'Challenges unavailable':'Checking challenges…';return <TouchableOpacity key={activity.id} accessibilityRole="button" accessibilityLabel={`${activity.activity_name}, ${logWhen(activity)}, ${logStats(activity)}, ${logSource(activity)}, ${tag}. Open workout details.`} onPress={()=>setSelectedId(activity.id)} style={[styles.workout,index<group.items.length-1&&styles.divider]}>
+        <View style={styles.workouts}>{group.items.map((activity,index)=>{const kind=logSport(activity.sport_type),colors=c.sports[kind],count=activity.review_status==='rejected'?0:(liveMembership.get(activity.id)?.length??0);const tag=membershipReady?count?`In ${count} ${count===1?'challenge':'challenges'}`:'No live challenge':receipts.error||catalog.error?'Challenges unavailable':'Checking challenges…';return <TouchableOpacity key={activity.id} accessibilityRole="button" accessibilityLabel={`${activity.activity_name}, ${logWhen(activity)}, ${logStats(activity)}, ${logSource(activity)}, ${tag}. Open workout details.`} onPress={()=>router.push({pathname:'/(app)/activity-detail',params:{id:activity.id}})} style={[styles.workout,index<group.items.length-1&&styles.divider]}>
           <View style={[styles.sportIcon,{backgroundColor:colors.bg}]}><LogSportIcon sport={kind} color={colors.ink}/></View>
           <View style={{flex:1,minWidth:0,gap:2}}><View style={[styles.between,{gap:8,alignItems:'baseline'}]}><Text style={styles.workoutTitle}>{activity.activity_name}</Text><Text style={styles.when}>{logWhen(activity)}</Text></View><Text style={styles.stats}>{logStats(activity)}</Text><View style={styles.meta}><Text style={styles.source}>{logSource(activity)}</Text><View style={[styles.tag,{backgroundColor:membershipReady&&count?c.tag:c.divider}]}><Text style={[styles.tagLabel,{color:membershipReady&&count?c.green:c.muted}]}>{tag}</Text></View></View></View>
         </TouchableOpacity>;})}</View>
@@ -90,7 +88,6 @@ export default function ActivityScreen() {
     </View><Text style={styles.caption}>{user?.email}</Text><TouchableOpacity accessibilityRole="button" disabled={signingOut} onPress={()=>void logout()} style={styles.smallButton}><Text style={styles.warning}>{signingOut?'Signing out…':'Sign out'}</Text></TouchableOpacity>{!!actionError&&<Text accessibilityRole="alert" style={styles.warning}>{actionError}</Text>}</>}
     {athlete.error&&<TouchableOpacity accessibilityRole="button" onPress={athlete.refresh} style={styles.smallButton}><Text style={styles.caption}>Profile details couldn’t load. Tap to retry.</Text></TouchableOpacity>}
   </ScrollView>
-  <ActivityLogDetails activity={selected} onClose={()=>setSelectedId(undefined)} challenges={selectedChallenges}/>
   {avatarEditor&&<AvatarEditor name={name} avatar={profile?.avatar} onClose={()=>setAvatarEditor(false)} onSave={saveAvatar}/>}
   </SafeAreaView>;
 }

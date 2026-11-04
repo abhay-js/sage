@@ -1,20 +1,24 @@
 import {useEffect,useState} from 'react';
-import {Keyboard,Platform,StyleSheet,Text,TouchableOpacity,View} from 'react-native';
+import {useFonts} from 'expo-font';
+import {Keyboard,Platform,StyleSheet,Text,TouchableOpacity,useWindowDimensions,View} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import type {BottomTabBarProps} from '@react-navigation/bottom-tabs';
 import {appTabs,parentAppTab,NavigationItem} from '../../lib/appNavigation';
 import {sageColors as c} from '../../lib/theme';
+import {homeFinalColors as hc,homeFinalFonts as hf,homeFinalFontAssets} from '../../lib/homeFinalTheme';
 import {SageIcon} from './SageIcon';
 interface Props extends BottomTabBarProps {record?:{status:string;sport:string}|null;items?:NavigationItem[];parentTab?:(route:string)=>string;floating?:boolean}
 export function AppTabBar({state,navigation,record,items=appTabs,parentTab=parentAppTab,floating=false}:Props){
+ useFonts(homeFinalFontAssets);
+ const viewport=useWindowDimensions(),athlete=items===appTabs,homeScale=Math.min(Math.min(viewport.width,520)/390,viewport.height/844);
  const insets=useSafeAreaInsets(),[keyboard,setKeyboard]=useState(false),current=state.routes[state.index]?.name,active=parentTab(current);
  useEffect(()=>{if(Platform.OS==='web')return;const show=Keyboard.addListener('keyboardDidShow',()=>setKeyboard(true)),hide=Keyboard.addListener('keyboardDidHide',()=>setKeyboard(false));return()=>{show.remove();hide.remove();};},[]);
  if(current==='profile-edit'||keyboard)return null;
  function open(name:string){const route=state.routes.find(value=>value.name===name);if(!route)return;const event=navigation.emit({type:'tabPress',target:route.key,canPreventDefault:true});if(!event.defaultPrevented&&current!==name)navigation.navigate(route.name,route.params);}
- return <View pointerEvents={floating?'box-none':'auto'} style={[s.shell,floating&&s.floating,{paddingBottom:Math.max(insets.bottom,8),paddingLeft:Math.max(insets.left,12),paddingRight:Math.max(insets.right,12)}]}>
+ return <View pointerEvents={floating?'box-none':'auto'} style={[s.shell,floating&&s.floating,{paddingBottom:athlete?Math.max(insets.bottom,22*homeScale):Math.max(insets.bottom,8),paddingLeft:Math.max(insets.left,12),paddingRight:Math.max(insets.right,12)}]}>
   {record&&current!=='record-activity'&&<TouchableOpacity accessibilityRole="button" accessibilityLabel="Return to your recording" onPress={()=>open('record-activity')} style={s.recording}><View style={s.recordingDot}/><Text style={s.recordingText}>{record.status==='recording'?'Recording':record.status==='paused'?'Paused':'Ready for review'} · {record.sport}</Text><SageIcon name="chevron" size={16} color={c.green}/></TouchableOpacity>}
-  <View accessibilityRole="tablist" accessibilityLabel="Main navigation" style={s.bar}>{items.map(tab=>{const selected=active===tab.name,add=tab.name==='record-activity';return <TouchableOpacity accessibilityRole="tab" accessibilityLabel={add?'Add a workout':tab.title} accessibilityState={{selected}} key={tab.name} onPress={()=>open(tab.name)} onLongPress={()=>{const route=state.routes.find(value=>value.name===tab.name);if(route)navigation.emit({type:'tabLongPress',target:route.key});}} style={s.item}>
-   {add?<View style={[s.add,floating&&{borderColor:c.surface},selected&&{backgroundColor:c.green}]}><SageIcon name="plus" size={24} color={c.onAccent}/></View>:<><SageIcon name={tab.icon} size={22} color={selected?c.text:c.muted}/><Text numberOfLines={1} style={[s.label,{color:selected?c.text:c.muted,fontWeight:selected?'800':'600'}]}>{tab.title}</Text></>}
+  <View accessibilityRole="tablist" accessibilityLabel="Main navigation" style={[s.bar,(athlete)&&{width:358*homeScale,height:58*homeScale,borderRadius:22*homeScale,borderWidth:0,backgroundColor:hc.white}]}>{items.map(tab=>{const selected=active===tab.name,add=tab.name==='record-activity';return <TouchableOpacity accessibilityRole="tab" accessibilityLabel={add?'Add a workout':tab.title} accessibilityState={{selected}} key={tab.name} onPress={()=>open(tab.name)} onLongPress={()=>{const route=state.routes.find(value=>value.name===tab.name);if(route)navigation.emit({type:'tabLongPress',target:route.key});}} style={[s.item,(athlete)&&{height:58*homeScale}]}>
+   {add?<View style={[s.add,floating&&{borderColor:c.surface},selected&&{backgroundColor:c.green},athlete&&{width:54*homeScale,height:54*homeScale,borderRadius:27*homeScale,borderWidth:4*homeScale,borderColor:hc.soft,backgroundColor:hc.deep,transform:[{translateY:-8*homeScale}],shadowColor:hc.deep,shadowOpacity:.25,shadowRadius:12}]}><SageIcon name="plus" size={24} color={c.onAccent}/></View>:<><SageIcon name={tab.icon} size={athlete?22*homeScale:22} color={selected?c.text:c.muted}/><Text numberOfLines={1} style={[s.label,{color:selected?c.text:c.muted,fontWeight:selected?'800':'600'},(athlete)&&{fontFamily:selected?hf.bold:hf.body,fontSize:11*homeScale,lineHeight:14*homeScale}]}>{tab.title}</Text></>}
   </TouchableOpacity>;})}</View>
  </View>;
 }

@@ -11,7 +11,7 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#F3F7FA"
+      "backgroundColor": "#2F7BE6"
     },
     "ios": {
       "supportsTablet": false,
@@ -34,7 +34,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#F3F7FA"
+        "backgroundColor": "#2F7BE6"
       },
       "package": "com.sage.app",
       "permissions": [

@@ -1,10 +1,10 @@
 import type {SageIconName} from '../components/ui/SageIcon';
 export interface NavigationItem {name:string;title:string;icon:SageIconName}
 export const appTabs:NavigationItem[]=[
- {name:'home',title:'Home',icon:'home'},
+ {name:'home',title:'Camp',icon:'mountain'},
  {name:'ranks',title:'Climb',icon:'mountain'},
  {name:'record-activity',title:'Add',icon:'plus'},
- {name:'challenges',title:'Challenges',icon:'flag'},
+ {name:'village',title:'Crew',icon:'users'},
  {name:'log',title:'You',icon:'user'},
 ];
 export const adminTabs:NavigationItem[]=[
@@ -22,11 +22,11 @@ export function parentAdminTab(route:string){
  if(route==='submissions')return 'workouts';
  return route;
 }
-export const hiddenAppScreens=['sessions','profile','health-connect','garmin','submit-activity','village','profile-details','profile-edit','workout-result','challenge-detail','challenge-rules','race-detail','session-detail','session-create','session-edit'];
+export const hiddenAppScreens=['activity-detail','sessions','profile','health-connect','garmin','submit-activity','challenges','profile-details','profile-edit','workout-result','challenge-detail','challenge-rules','race-detail','session-detail','session-create','session-edit'];
 export function parentAppTab(route:string){
- if(['challenge-detail','challenge-rules','race-detail'].includes(route))return 'challenges';
- if(['sessions','session-detail','session-create','session-edit','village'].includes(route))return 'challenges';
+ if(['challenges','challenge-detail','challenge-rules','race-detail'].includes(route))return 'ranks';
+ if(['sessions','session-detail','session-create','session-edit'].includes(route))return 'village';
  if(route==='submit-activity')return 'record-activity';
- if(['profile','profile-details','profile-edit','health-connect','garmin','workout-result'].includes(route))return 'log';
+ if(['activity-detail','profile','profile-details','profile-edit','health-connect','garmin','workout-result'].includes(route))return 'log';
  return route;
 }

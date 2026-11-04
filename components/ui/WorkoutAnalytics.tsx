@@ -49,15 +49,19 @@ export function WorkoutAnalytics({activity}:{activity:ActivityLog}){
   const avgHeart=activity.avg_heartrate??(metrics.heartRate.length?metrics.heartRate.reduce((n,s)=>n+s.value,0)/metrics.heartRate.length:null),maxHeart=activity.max_heartrate??(metrics.heartRate.length?metrics.heartRate.reduce((n,s)=>Math.max(n,s.value),0):null);
   const pace=distance&&activity.moving_time_secs>0?activity.moving_time_secs/60/(distance/(swimming?100:1000)):null;
   const averageSpeed=activity.avg_speed!=null?activity.avg_speed*3.6:distance&&activity.moving_time_secs>0?distance/activity.moving_time_secs*3.6:null;
-  const items:[string,string|number][]=[['Distance',distance!=null?`${(distance/1000).toFixed(2)} km`:'—'],['Workout duration',elapsed(activity.moving_time_secs)],['Average HR',avgHeart?`${Math.round(avgHeart)} bpm`:'—'],['Maximum HR',maxHeart?`${Math.round(maxHeart)} bpm`:'—']];
-  if(paceSport)items.push(['Average pace',pace?`${formatPace(pace)} /${swimming?'100m':'km'}`:'—']);
-  if(riding)items.push(['Average speed',averageSpeed!=null?`${averageSpeed.toFixed(1)} km/h`:'—']);
+  const items:[string,string|number][]=[];
+  if(distance!=null&&Number.isFinite(distance)&&distance>0)items.push(['Distance',`${(distance/1000).toFixed(2)} km`]);
+  if(activity.moving_time_secs>0)items.push(['Workout duration',elapsed(activity.moving_time_secs)]);
+  if(avgHeart!=null&&Number.isFinite(avgHeart)&&avgHeart>0)items.push(['Average HR',`${Math.round(avgHeart)} bpm`]);
+  if(maxHeart!=null&&Number.isFinite(maxHeart)&&maxHeart>0)items.push(['Maximum HR',`${Math.round(maxHeart)} bpm`]);
+  if(paceSport&&pace)items.push(['Average pace',`${formatPace(pace)} /${swimming?'100m':'km'}`]);
+  if(riding&&averageSpeed!=null&&Number.isFinite(averageSpeed)&&averageSpeed>0)items.push(['Average speed',`${averageSpeed.toFixed(1)} km/h`]);
   return <><Section title="Workout overview"/><MetricGrid items={items}/><Text style={[s.muted,{fontSize:11,marginBottom:18}]}>Average pace/speed uses the recorded distance and workout duration. Charts use elapsed time.</Text>
     <Section title="Performance charts"/>{metrics.loading?<Skeleton/>:<>
-      <MetricChart title="Heart rate" samples={metrics.heartRate} duration={duration} unit="bpm" color={c.orange} empty={metrics.heartError??'No heart-rate samples are readable for this workout. A recorded average alone cannot produce a graph.'}/>
-      {(riding||paceSport)&&<MetricChart title={riding?'Speed':'Pace'} samples={riding?series.speed:swimming?series.pace.map(p=>({...p,value:p.value/10})):series.pace} duration={duration} unit={riding?'km/h':swimming?'min/100m':'min/km'} color={c.green} pace={!riding} empty={metrics.routeError??'No timed GPS speed data is available. Indoor workouts may have distance totals without a pace graph.'}/>}
-      {!swimming&&!!series.elevation.length&&<MetricChart title="Elevation" samples={series.elevation} duration={duration} unit="m" color={c.green} empty="No elevation samples recorded."/>}
-      <Text style={[s.muted,{fontSize:11,marginBottom:14}]}>Heart rate: Health samples within this workout’s time window. Pace/speed and elevation: recorded GPS route. Stationary pace segments and missing intervals are omitted. These charts stay on this iPhone.</Text>
+      {metrics.heartRate.length>=2&&<MetricChart title="Heart rate" samples={metrics.heartRate} duration={duration} unit="bpm" color={c.orange} empty={metrics.heartError??'No heart-rate samples are readable for this workout. A recorded average alone cannot produce a graph.'}/>}
+      {(riding||paceSport)&&(riding?series.speed:series.pace).length>=2&&<MetricChart title={riding?'Speed':'Pace'} samples={riding?series.speed:swimming?series.pace.map(p=>({...p,value:p.value/10})):series.pace} duration={duration} unit={riding?'km/h':swimming?'min/100m':'min/km'} color={c.green} pace={!riding} empty={metrics.routeError??'No timed GPS speed data is available. Indoor workouts may have distance totals without a pace graph.'}/>}
+      {!swimming&&series.elevation.length>=2&&<MetricChart title="Elevation" samples={series.elevation} duration={duration} unit="m" color={c.green} empty="No elevation samples recorded."/>}
+      <Text style={[s.muted,{fontSize:11,marginBottom:14}]}>Charts use available workout samples and elapsed time. Stationary pace segments and missing intervals are omitted.</Text>
       {(metrics.heartError||metrics.routeError)&&<Button title="Retry sample lookup" onPress={metrics.retry}/>}</>}
     {splits.length>0&&<><Section title={riding?'5 km splits':swimming?'100 m splits':'Kilometer splits'}/><Text style={[s.muted,{fontSize:11,marginBottom:12}]}>Derived from available GPS points, using elapsed time. Route gaps produce partial splits.</Text><View style={s.card}>{splits.map((split,i)=><View key={i} style={[s.between,{padding:14,borderBottomWidth:1,borderColor:c.border}]}><Text style={s.muted}>{i+1}{split.partial?' · partial':''} · {(split.distance/1000).toFixed(2)} km</Text><Text style={s.section}>{riding?`${(split.distance/split.seconds*3.6).toFixed(1)} km/h`:`${formatPace(split.seconds/60/(split.distance/(swimming?100:1000)))} /${swimming?'100m':'km'}`}</Text></View>)}</View></>}
   </>;

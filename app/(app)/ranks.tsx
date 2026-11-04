@@ -17,7 +17,7 @@ import { challengeTiming, preferredChallenge, relativePoints, mountainRows, scor
 import { adventureColors as c } from '../../lib/theme';
 
 export default function MountainScreen() {
-  const params = useLocalSearchParams<{ raceId?: string; view?: string; previousRank?: string; passed?: string; demo?: string }>();
+  const params = useLocalSearchParams<{ raceId?: string; view?: string; previousRank?: string; passed?: string; demo?: string; preview?: string }>();
   const router = useRouter(), { user } = useAuth(), catalog = useProductChallenges(), profile = useAthleteProfile();
   const [selectedId, setSelectedId] = useState<string>(), [view, setView] = useState<'mountain'|'list'>(params.view === 'list' ? 'list' : 'mountain');
   const [page, setPage] = useState(0), [search, setSearch] = useState(''), [query, setQuery] = useState('');
@@ -38,7 +38,7 @@ export default function MountainScreen() {
   function exitDemo() { setSelectedId(liveChallenge?.id ?? 'live'); setCamera('me'); setPicker(false); }
   useEffect(() => { setSelectedId(params.raceId); }, [params.raceId]);
   useEffect(() => { if (params.view) setView(params.view === 'list' ? 'list' : 'mountain'); }, [params.view, params.raceId]);
-  useEffect(() => { setPage(0); setOffset(0); setCamera('me'); setAthlete(undefined); setSearch(''); setQuery(''); setPreviewWall(false); }, [raceId, isDemo]);
+  useEffect(() => { setPage(0); setOffset(0); setCamera('me'); setAthlete(undefined); setSearch(''); setQuery(''); setPreviewWall(params.preview==='1'); }, [raceId, isDemo,params.preview]);
   useEffect(() => { const timer = setTimeout(() => { setQuery(search.trim()); setPage(0); }, 250); return () => clearTimeout(timer); }, [search]);
   const me = around.data?.current, total = around.data?.total ?? challenge?.participant_count ?? 0;
   const nearby = camera === 'range' || !me ? range.data?.athletes ?? [] : [...(around.data?.above ?? []), me, ...(around.data?.below ?? [])];

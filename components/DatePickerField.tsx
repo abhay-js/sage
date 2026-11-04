@@ -7,9 +7,10 @@ interface Props {
   onChange: (d: Date) => void;
   mode: 'date' | 'time';
   minimumDate?: Date;
+  accessibilityLabel?: string;
 }
 
-export function DatePickerField({ value, onChange, mode, minimumDate }: Props) {
+export function DatePickerField({ value, onChange, mode, minimumDate, accessibilityLabel }: Props) {
   const [show, setShow] = useState(false);
 
   const displayText =
@@ -20,6 +21,8 @@ export function DatePickerField({ value, onChange, mode, minimumDate }: Props) {
   return (
     <View>
       <TouchableOpacity
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel}
         onPress={() => setShow((v) => !v)}
         activeOpacity={0.8}
         className="bg-sage-surface rounded-xl px-4 py-3 flex-row justify-between items-center"

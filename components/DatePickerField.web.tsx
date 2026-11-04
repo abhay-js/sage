@@ -4,19 +4,21 @@ interface Props {
   onChange: (d: Date) => void;
   mode: 'date' | 'time';
   minimumDate?: Date;
+  accessibilityLabel?: string;
 }
 
-export function DatePickerField({ value, onChange, mode, minimumDate }: Props) {
+export function DatePickerField({ value, onChange, mode, minimumDate, accessibilityLabel }: Props) {
   const inputValue =
     mode === 'date'
-      ? value.toISOString().slice(0, 10)
+      ? `${value.getFullYear()}-${String(value.getMonth()+1).padStart(2,'0')}-${String(value.getDate()).padStart(2,'0')}`
       : `${String(value.getHours()).padStart(2, '0')}:${String(value.getMinutes()).padStart(2, '0')}`;
 
   const minValue =
-    minimumDate && mode === 'date' ? minimumDate.toISOString().slice(0, 10) : undefined;
+    minimumDate && mode === 'date' ? `${minimumDate.getFullYear()}-${String(minimumDate.getMonth()+1).padStart(2,'0')}-${String(minimumDate.getDate()).padStart(2,'0')}` : undefined;
 
   return (
     <input
+      aria-label={accessibilityLabel}
       type={mode === 'date' ? 'date' : 'time'}
       value={inputValue}
       min={minValue}

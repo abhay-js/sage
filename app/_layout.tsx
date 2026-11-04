@@ -27,7 +27,7 @@ function RootNavigator() {
     const inPending = segments[0] === 'pending';
 
     if (!user) {
-      if (!inAuth) router.replace('/(auth)/login');
+      if (!inAuth) router.replace('/(auth)/welcome');
     } else if (user.role === 'admin') {
       if (!inAdmin) router.replace('/(admin)/dashboard');
     } else if (!user.onboarding_completed) {

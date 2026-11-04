@@ -1,0 +1,32 @@
+<svg aria-hidden="true" width="390" height="{{H}}" viewBox="{{viewBox}}" style="position: absolute; left: 0; top: 0; overflow: visible">
+        <defs>
+          <filter id="v-grain" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+            <feTurbulence type="fractalNoise" baseFrequency="0.018 0.05" numOctaves="4" seed="4" result="n"></feTurbulence>
+            <feDiffuseLighting in="n" surfaceScale="4" lighting-color="#FFFFFF" result="lit"><feDistantLight azimuth="200" elevation="45"></feDistantLight></feDiffuseLighting>
+            <feComposite in="lit" in2="SourceGraphic" operator="in" result="litIn"></feComposite>
+            <feBlend in="SourceGraphic" in2="litIn" mode="multiply"></feBlend>
+          </filter>
+          <linearGradient id="v-side" x1="150" y1="0" x2="392" y2="0" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#FFE6C8" stop-opacity=".45"></stop><stop offset=".3" stop-color="#FFE6C8" stop-opacity="0"></stop><stop offset=".7" stop-color="#5A2A18" stop-opacity=".15"></stop><stop offset="1" stop-color="#5A2A18" stop-opacity=".4"></stop></linearGradient>
+          <linearGradient id="v-depth" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5A2A18" stop-opacity="0"></stop><stop offset="1" stop-color="#3A1A10" stop-opacity=".35"></stop></linearGradient>
+        </defs>
+        <circle class="v-spark" cx="306" cy="300" r="58" fill="#FFF0B8" opacity=".75"></circle>
+        <path d="{{rockD}}" fill="#8C6B50" filter="url(#v-grain)"></path>
+        <path d="{{strataD}}" fill="#6E5240" opacity=".5"></path>
+        <path d="{{darkD}}" fill="#5A4232" opacity=".7"></path>
+        <path d="{{lightD}}" fill="#B08866" opacity=".75"></path>
+        <path d="{{rockD}}" fill="url(#v-side)"></path>
+        <path d="{{rockD}}" fill="url(#v-depth)"></path>
+        <path d="{{ledgeShadowD}}" fill="#5A2A18" opacity=".35"></path>
+        <path d="{{ledgeD}}" fill="#C29A74"></path>
+        <path d="{{mossD}}" fill="#5FA048"></path>
+        <path d="{{cracksD}}" fill="none" stroke="#3E2C20" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity=".8"></path>
+        <path d="{{edgeD}}" fill="none" stroke="#E8D2A8" stroke-width="2.2" stroke-linecap="round" opacity=".7"></path>
+        <path d="{{vinesD}}" fill="none" stroke="#3F8A30" stroke-width="2.4" stroke-linecap="round"></path>
+        <path d="{{leavesD}}" fill="#5FA048"></path>
+        <path d="{{canopyD}}" fill="#4E9A3A"></path>
+        <path d="{{canopyHiD}}" fill="none" stroke="#7CC04A" stroke-width="3" stroke-linecap="round"></path>
+        <path d="{{rockD}}" fill="{{th.tint}}" opacity="{{th.tintO}}"></path>
+        <path d="{{groundD}}" fill="{{th.f1}}"></path>
+        <path d="{{baseD}}" fill="{{th.f2}}"></path>
+        <path d="{{planLineD}}" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-dasharray="2 6" stroke-linecap="round" opacity=".9"></path>
+      </svg>

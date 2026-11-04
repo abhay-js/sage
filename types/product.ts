@@ -18,8 +18,9 @@ export type BonusType='EARLY_BIRD'|'STREAK'|'OUTDOOR'|'BRICK'|'ELEVATION'|'CUSTO
 export interface BonusMission {id:string;type:BonusType;title:string;description:string;points:number;maxUses?:number;metadata:{hour?:number;days?:number;elevation?:number;gapMinutes?:number;activityIds?:string[]}}
 export interface RuleCopy {id:string;title:string;description:string;order:number}
 export interface Reward {id:string;rank:number;title:string;description:string;imageUrl?:string;sponsor?:string;terms?:string}
+export interface ChallengePartner {id:string;name:string;link:string;role:'Presenting'|'Prize'|'Mission';perk:string;logoUrl:string;placements:string[]}
 export interface ChallengeConfiguration {
-  description:string;challengeType:string;coverImageUrl?:string;timezone:string;maxWorkoutsPerDay:number|null;
+  description:string;challengeType:string;coverImageUrl?:string;tagline?:string;hashtag?:string;shareCardImageUrl?:string;rulesPosterUrl?:string;partners?:ChallengePartner[];approvedPlatforms?:string[];sportIconUrls?:Record<string,string>;timezone:string;maxWorkoutsPerDay:number|null;
   scoringMode:'LEGACY'|'THRESHOLD';scoringRules:ScoringRule[];bonuses:BonusMission[];rules:RuleCopy[];rewards:Reward[];
   legacy:{sessionPoints:number;hourPoints:number;streak7:number;streak30:number};
 }
